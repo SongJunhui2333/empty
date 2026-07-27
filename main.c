@@ -30,8 +30,8 @@
  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "ti_msp_dl_config.h"
 #include "main.h"
+#include "ti_msp_dl_config.h"
 
 int main(void)
 {
@@ -42,8 +42,7 @@ int main(void)
 
     OLED_Init();
 
-
-    while (1) {
-
+    while (1)
+    {
     }
 }

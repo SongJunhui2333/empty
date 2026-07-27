@@ -5,6 +5,8 @@
 #include "interrupt.h"
 
 // #include "mpu6050.h"
+#include "buzzer.h"
+#include "light.h"
 #include "oled_hardware_i2c.h"
 // #include "ultrasonic_capture.h"
 // #include "ultrasonic_gpio.h"
@@ -14,4 +16,4 @@
 // #include "lsm6dsv16x.h"
 // #include "imu660rb.h"
 
-#endif  /* #ifndef _MAIN_H_ */
+#endif /* #ifndef _MAIN_H_ */

@@ -22,7 +22,9 @@
                 "${workspaceFolder}/Drivers/Ultrasonic_Capture",
                 "${workspaceFolder}/Drivers/Ultrasonic_GPIO",
                 "${workspaceFolder}/Drivers/VL53L0X",
-                "${workspaceFolder}/Drivers/WIT"
+                "${workspaceFolder}/Drivers/WIT",
+                "${workspaceFolder}/Drivers/LIGHT",
+                "${workspaceFolder}/Drivers/BUZZER"
             ],
             "defines": [
                 "__MSPM0G3507__"
