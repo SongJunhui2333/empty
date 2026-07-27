@@ -292,9 +292,9 @@ void MOTOR_CONTROL_INST_IRQHandler(void)
         encoder_l_count = 0;
         encoder_r_count = 0;
 
-        sprintf((char *)uart_tx_buff, "L: %d, R: %d\r\n", filt_velocity_l, filt_velocity_r);
-        UART_print_string(DEBUG_INST, (char *)uart_tx_buff);
-        memset((void *)uart_tx_buff, 0, 128);
+        // sprintf((char *)uart_tx_buff, "L: %d, R: %d\r\n", filt_velocity_l, filt_velocity_r);
+        // UART_print_string(DEBUG_INST, (char *)uart_tx_buff);
+        // memset((void *)uart_tx_buff, 0, 128);
 
         /* 使用编码器计数值作为速度反馈进行PID计算 */
         float ctrl_l = pid_calculate(&pid_motor_l, (float)filt_velocity_l);
@@ -305,7 +305,7 @@ void MOTOR_CONTROL_INST_IRQHandler(void)
             ctrl_r = 20;
 
         /* 将PID输出转换为电机占空比并施加到电机 */
-        motor_set_duty(2, (uint16_t)(100 * ctrl_l)); 
+        motor_set_duty(2, (uint16_t)(100 * ctrl_l));
         motor_set_duty(1, (uint16_t)(100 * ctrl_r));
 
         break;

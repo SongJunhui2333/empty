@@ -1,6 +1,8 @@
 eclipse.preferences.version=1
 encoding//Debug/Drivers/BUZZER/subdir_rules.mk=UTF-8
 encoding//Debug/Drivers/BUZZER/subdir_vars.mk=UTF-8
+encoding//Debug/Drivers/GW_GRAY/subdir_rules.mk=UTF-8
+encoding//Debug/Drivers/GW_GRAY/subdir_vars.mk=UTF-8
 encoding//Debug/Drivers/KEY/subdir_rules.mk=UTF-8
 encoding//Debug/Drivers/KEY/subdir_vars.mk=UTF-8
 encoding//Debug/Drivers/LIGHT/subdir_rules.mk=UTF-8

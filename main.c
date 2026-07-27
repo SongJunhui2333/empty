@@ -68,6 +68,14 @@ int main(void)
         // motor_set_duty(1, 1000); // 设置电机1占空比为2000
         // motor_set_duty(2, 1000); // 设置电机2占空比为2000
 
-        my_delay_ms(1000); // 延时1秒
+        Digtal = gw_gray_serial_read();
+        sprintf((char *)uart_tx_buff, "Digtal %d-%d-%d-%d-%d-%d-%d-%d\r\n", (Digtal >> 0) & 0x01, (Digtal >> 1) & 0x01,
+                (Digtal >> 2) & 0x01, (Digtal >> 3) & 0x01, (Digtal >> 4) & 0x01, (Digtal >> 5) & 0x01,
+                (Digtal >> 6) & 0x01, (Digtal >> 7) & 0x01);
+        UART_print_string(DEBUG_INST, (char *)uart_tx_buff);
+        memset((void *)uart_tx_buff, 0, 128);
+        my_delay_ms(100);
+
+        // my_delay_ms(1000); // 延时1秒
     }
 }

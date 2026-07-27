@@ -5,9 +5,11 @@
 #include "interrupt.h"
 
 #include "stdio.h"
+#include "string.h"
 
 // #include "mpu6050.h"
 #include "buzzer.h"
+#include "gw_gray_serial.h"
 #include "key.h"
 #include "light.h"
 #include "oled_hardware_i2c.h"
