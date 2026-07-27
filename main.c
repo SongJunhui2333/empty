@@ -33,14 +33,20 @@
 #include "main.h"
 #include "ti_msp_dl_config.h"
 
+uint8_t oled_buff[36];
+
 int main(void)
 {
     SYSCFG_DL_init();
 
     /* Don't remove this! */
     Interrupt_Init();
+    NVIC_EnableIRQ(GPIOA_INT_IRQn); // 使能GPIOA中断
+    NVIC_EnableIRQ(GPIOB_INT_IRQn); // 使能GPIOB中断
 
     OLED_Init();
+
+    my_delay_ms(500); // 等待0.5秒使系统上电完成
 
     while (1)
     {

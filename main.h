@@ -4,8 +4,11 @@
 #include "clock.h"
 #include "interrupt.h"
 
+#include "stdio.h"
+
 // #include "mpu6050.h"
 #include "buzzer.h"
+#include "key.h"
 #include "light.h"
 #include "oled_hardware_i2c.h"
 // #include "ultrasonic_capture.h"

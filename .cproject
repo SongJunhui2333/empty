@@ -45,6 +45,7 @@
                                     <listOptionValue value="${COM_TI_MSPM0_SDK_INSTALL_DIR}/source"/>
                                     <listOptionValue value="${PROJECT_ROOT}/Drivers/LIGHT"/>
                                     <listOptionValue value="${PROJECT_ROOT}/Drivers/BUZZER"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/Drivers/KEY"/>
                                 </option>
                                 <option id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_5.1.compilerID.DEFINE.800094296" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_5.1.compilerID.DEFINE" valueType="definedSymbols">
                                     <listOptionValue value="${COM_TI_MSPM0_SDK_SYMBOLS}"/>

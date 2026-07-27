@@ -12,6 +12,7 @@
 const GPIO    = scripting.addModule("/ti/driverlib/GPIO", {}, false);
 const GPIO1   = GPIO.addInstance();
 const GPIO2   = GPIO.addInstance();
+const GPIO3   = GPIO.addInstance();
 const I2C     = scripting.addModule("/ti/driverlib/I2C", {}, false);
 const I2C1    = I2C.addInstance();
 const SYSCTL  = scripting.addModule("/ti/driverlib/SYSCTL");
@@ -39,6 +40,27 @@ const Board = scripting.addModule("/ti/driverlib/Board", {}, false);
 GPIO2.$name                         = "BUZZER";
 GPIO2.associatedPins[0].$name       = "buzzer";
 GPIO2.associatedPins[0].pin.$assign = "PB17";
+
+GPIO3.$name                              = "KEY";
+GPIO3.associatedPins.create(3);
+GPIO3.associatedPins[0].$name            = "K_1";
+GPIO3.associatedPins[0].direction        = "INPUT";
+GPIO3.associatedPins[0].interruptEn      = true;
+GPIO3.associatedPins[0].polarity         = "FALL";
+GPIO3.associatedPins[0].internalResistor = "PULL_UP";
+GPIO3.associatedPins[0].pin.$assign      = "PA25";
+GPIO3.associatedPins[1].$name            = "K_2";
+GPIO3.associatedPins[1].direction        = "INPUT";
+GPIO3.associatedPins[1].interruptEn      = true;
+GPIO3.associatedPins[1].polarity         = "FALL";
+GPIO3.associatedPins[1].internalResistor = "PULL_UP";
+GPIO3.associatedPins[1].pin.$assign      = "PA26";
+GPIO3.associatedPins[2].$name            = "K_3";
+GPIO3.associatedPins[2].direction        = "INPUT";
+GPIO3.associatedPins[2].internalResistor = "PULL_UP";
+GPIO3.associatedPins[2].interruptEn      = true;
+GPIO3.associatedPins[2].polarity         = "FALL";
+GPIO3.associatedPins[2].pin.$assign      = "PB21";
 
 I2C1.$name                             = "I2C_OLED";
 I2C1.basicEnableController             = true;

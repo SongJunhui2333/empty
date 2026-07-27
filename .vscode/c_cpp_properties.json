@@ -24,7 +24,8 @@
                 "${workspaceFolder}/Drivers/VL53L0X",
                 "${workspaceFolder}/Drivers/WIT",
                 "${workspaceFolder}/Drivers/LIGHT",
-                "${workspaceFolder}/Drivers/BUZZER"
+                "${workspaceFolder}/Drivers/BUZZER",
+                "${workspaceFolder}/Drivers/KEY"
             ],
             "defines": [
                 "__MSPM0G3507__"
