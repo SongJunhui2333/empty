@@ -11,6 +11,7 @@
 #include "key.h"
 #include "light.h"
 #include "oled_hardware_i2c.h"
+#include "uart.h"
 // #include "ultrasonic_capture.h"
 // #include "ultrasonic_gpio.h"
 // #include "bno08x_uart_rvc.h"

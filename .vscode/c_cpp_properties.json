@@ -25,7 +25,10 @@
                 "${workspaceFolder}/Drivers/WIT",
                 "${workspaceFolder}/Drivers/LIGHT",
                 "${workspaceFolder}/Drivers/BUZZER",
-                "${workspaceFolder}/Drivers/KEY"
+                "${workspaceFolder}/Drivers/KEY",
+                "${workspaceFolder}/Drivers/MOTOR",
+                "${workspaceFolder}/HAL",
+                "${workspaceFolder}/Drivers/UART"
             ],
             "defines": [
                 "__MSPM0G3507__"

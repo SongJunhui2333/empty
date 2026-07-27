@@ -1,6 +1,5 @@
 #include "interrupt.h"
-#include "clock.h"
-#include "ti_msp_dl_config.h"
+
 // #include "mpu6050.h"
 // #include "bno08x_uart_rvc.h"
 // #include "wit.h"
@@ -126,98 +125,98 @@ void UART_WIT_INST_IRQHandler(void)
 
 void GROUP1_IRQHandler(void)
 {
-    switch (DL_Interrupt_getPendingGroup(DL_INTERRUPT_GROUP_1))
-    {
-#if defined GPIO_MULTIPLE_GPIOA_INT_IIDX
-    case GPIO_MULTIPLE_GPIOA_INT_IIDX:
-        switch (DL_GPIO_getPendingInterrupt(GPIOA))
-        {
-#if (defined GPIO_MPU6050_PORT) && (GPIO_MPU6050_PORT == GPIOA)
-        case GPIO_MPU6050_PIN_MPU6050_INT_IIDX:
-            Read_Quad();
-            break;
-#endif
+    //     switch (DL_Interrupt_getPendingGroup(DL_INTERRUPT_GROUP_1))
+    //     {
+    // #if defined GPIO_MULTIPLE_GPIOA_INT_IIDX
+    //     case GPIO_MULTIPLE_GPIOA_INT_IIDX:
+    //         switch (DL_GPIO_getPendingInterrupt(GPIOA))
+    //         {
+    // #if (defined GPIO_MPU6050_PORT) && (GPIO_MPU6050_PORT == GPIOA)
+    //         case GPIO_MPU6050_PIN_MPU6050_INT_IIDX:
+    //             Read_Quad();
+    //             break;
+    // #endif
 
-#if (defined GPIO_LSM6DSV16X_PORT) && (GPIO_LSM6DSV16X_PORT == GPIOA)
-        case GPIO_LSM6DSV16X_PIN_LSM6DSV16X_INT_IIDX:
-            Read_LSM6DSV16X();
-            break;
-#endif
+    // #if (defined GPIO_LSM6DSV16X_PORT) && (GPIO_LSM6DSV16X_PORT == GPIOA)
+    //         case GPIO_LSM6DSV16X_PIN_LSM6DSV16X_INT_IIDX:
+    //             Read_LSM6DSV16X();
+    //             break;
+    // #endif
 
-#if (defined GPIO_VL53L0X_PIN_VL53L0X_GPIO1_PORT) && (GPIO_VL53L0X_PIN_VL53L0X_GPIO1_PORT == GPIOA)
-        case GPIO_VL53L0X_PIN_VL53L0X_GPIO1_IIDX:
-            Read_VL53L0X();
-            break;
-#endif
+    // #if (defined GPIO_VL53L0X_PIN_VL53L0X_GPIO1_PORT) && (GPIO_VL53L0X_PIN_VL53L0X_GPIO1_PORT == GPIOA)
+    //         case GPIO_VL53L0X_PIN_VL53L0X_GPIO1_IIDX:
+    //             Read_VL53L0X();
+    //             break;
+    // #endif
 
-#if (defined GPIO_IMU660RB_PIN_IMU660RB_INT1_PORT) && (GPIO_IMU660RB_PIN_IMU660RB_INT1_PORT == GPIOA)
-        case GPIO_IMU660RB_PIN_IMU660RB_INT1_IIDX:
-            Read_IMU660RB();
-            break;
-#endif
+    // #if (defined GPIO_IMU660RB_PIN_IMU660RB_INT1_PORT) && (GPIO_IMU660RB_PIN_IMU660RB_INT1_PORT == GPIOA)
+    //         case GPIO_IMU660RB_PIN_IMU660RB_INT1_IIDX:
+    //             Read_IMU660RB();
+    //             break;
+    // #endif
 
-        default:
-            break;
-        }
-#endif
+    //         default:
+    //             break;
+    //         }
+    // #endif
 
-#if defined GPIO_MULTIPLE_GPIOB_INT_IIDX
-    case GPIO_MULTIPLE_GPIOB_INT_IIDX:
-        switch (DL_GPIO_getPendingInterrupt(GPIOB))
-        {
-#if (defined GPIO_MPU6050_PORT) && (GPIO_MPU6050_PORT == GPIOB)
-        case GPIO_MPU6050_PIN_MPU6050_INT_IIDX:
-            Read_Quad();
-            break;
-#endif
+    // #if defined GPIO_MULTIPLE_GPIOB_INT_IIDX
+    //     case GPIO_MULTIPLE_GPIOB_INT_IIDX:
+    //         switch (DL_GPIO_getPendingInterrupt(GPIOB))
+    //         {
+    // #if (defined GPIO_MPU6050_PORT) && (GPIO_MPU6050_PORT == GPIOB)
+    //         case GPIO_MPU6050_PIN_MPU6050_INT_IIDX:
+    //             Read_Quad();
+    //             break;
+    // #endif
 
-#if (defined GPIO_LSM6DSV16X_PORT) && (GPIO_LSM6DSV16X_PORT == GPIOB)
-        case GPIO_LSM6DSV16X_PIN_LSM6DSV16X_INT_IIDX:
-            Read_LSM6DSV16X();
-            break;
-#endif
+    // #if (defined GPIO_LSM6DSV16X_PORT) && (GPIO_LSM6DSV16X_PORT == GPIOB)
+    //         case GPIO_LSM6DSV16X_PIN_LSM6DSV16X_INT_IIDX:
+    //             Read_LSM6DSV16X();
+    //             break;
+    // #endif
 
-#if (defined GPIO_VL53L0X_PIN_VL53L0X_GPIO1_PORT) && (GPIO_VL53L0X_PIN_VL53L0X_GPIO1_PORT == GPIOB)
-        case GPIO_VL53L0X_PIN_VL53L0X_GPIO1_IIDX:
-            Read_VL53L0X();
-            break;
-#endif
+    // #if (defined GPIO_VL53L0X_PIN_VL53L0X_GPIO1_PORT) && (GPIO_VL53L0X_PIN_VL53L0X_GPIO1_PORT == GPIOB)
+    //         case GPIO_VL53L0X_PIN_VL53L0X_GPIO1_IIDX:
+    //             Read_VL53L0X();
+    //             break;
+    // #endif
 
-#if (defined GPIO_IMU660RB_PIN_IMU660RB_INT1_PORT) && (GPIO_IMU660RB_PIN_IMU660RB_INT1_PORT == GPIOB)
-        case GPIO_IMU660RB_PIN_IMU660RB_INT1_IIDX:
-            Read_IMU660RB();
-            break;
-#endif
+    // #if (defined GPIO_IMU660RB_PIN_IMU660RB_INT1_PORT) && (GPIO_IMU660RB_PIN_IMU660RB_INT1_PORT == GPIOB)
+    //         case GPIO_IMU660RB_PIN_IMU660RB_INT1_IIDX:
+    //             Read_IMU660RB();
+    //             break;
+    // #endif
 
-        default:
-            break;
-        }
-#endif
+    //         default:
+    //             break;
+    //         }
+    // #endif
 
-#if defined GPIO_MPU6050_INT_IIDX
-    case GPIO_MPU6050_INT_IIDX:
-        Read_Quad();
-        break;
-#endif
+    // #if defined GPIO_MPU6050_INT_IIDX
+    //     case GPIO_MPU6050_INT_IIDX:
+    //         Read_Quad();
+    //         break;
+    // #endif
 
-#if defined GPIO_LSM6DSV16X_INT_IIDX
-    case GPIO_LSM6DSV16X_INT_IIDX:
-        Read_LSM6DSV16X();
-        break;
-#endif
+    // #if defined GPIO_LSM6DSV16X_INT_IIDX
+    //     case GPIO_LSM6DSV16X_INT_IIDX:
+    //         Read_LSM6DSV16X();
+    //         break;
+    // #endif
 
-#if defined GPIO_VL53L0X_INT_IIDX
-    case GPIO_VL53L0X_INT_IIDX:
-        Read_VL53L0X();
-        break;
-#endif
+    // #if defined GPIO_VL53L0X_INT_IIDX
+    //     case GPIO_VL53L0X_INT_IIDX:
+    //         Read_VL53L0X();
+    //         break;
+    // #endif
 
-#if defined GPIO_IMU660RB_INT_IIDX
-    case GPIO_IMU660RB_INT_IIDX:
-        Read_IMU660RB();
-        break;
-#endif
-    }
+    // #if defined GPIO_IMU660RB_INT_IIDX
+    //     case GPIO_IMU660RB_INT_IIDX:
+    //         Read_IMU660RB();
+    //         break;
+    // #endif
+    //     }
 
     switch (DL_GPIO_getPendingInterrupt(GPIOA))
     {
@@ -241,14 +240,15 @@ void GROUP1_IRQHandler(void)
     break;
 
     // 编码器记录
-    // case DC_MOTOR_ENCODER2_A_IIDX: // 编码器2（电机2=左轮）
-    //     encoder_l_count++;
-    //     encoder_l_total++;
-    //     break;
-    // case DC_MOTOR_ENCODER1_A_IIDX: // 编码器1（电机1=右轮）
-    //     encoder_r_count++;
-    //     encoder_r_total++;
-    //     break;
+    case DC_MOTOR_ENCODER2_A_IIDX: // 编码器2（电机2=左轮）
+        encoder_r_count++;
+        encoder_r_total++;
+        break;
+    case DC_MOTOR_ENCODER1_A_IIDX: // 编码器1（电机1=右轮）
+        encoder_l_count++;
+        encoder_l_total++;
+        break;
+
     default:
         break;
     }
@@ -264,6 +264,52 @@ void GROUP1_IRQHandler(void)
         }
     }
     break;
+
+    default:
+        break;
+    }
+}
+
+void MOTOR_CONTROL_INST_IRQHandler(void)
+{
+
+    switch (DL_Timer_getPendingInterrupt(MOTOR_CONTROL_INST))
+    {
+
+    case DL_TIMER_IIDX_LOAD: {
+
+        float a = 0.3; // 滤波系数，取值范围为0~1，越接近1，滤波效果越明显
+        filt_velocity_l =
+            a * encoder_l_count +
+            (1 - a) * last_filt_velocitya_l;     // 简单算法滤波，此次速度取30%的权重，过往速度取70%的权重，让速度更平滑
+        last_filt_velocitya_l = filt_velocity_l; // 此次速度记录为“上次速度”
+
+        filt_velocity_r =
+            a * encoder_r_count +
+            (1 - a) * last_filt_velocitya_r;     // 简单算法滤波，此次速度取30%的权重，过往速度取70%的权重，让速度更平滑
+        last_filt_velocitya_r = filt_velocity_r; // 此次速度记录为“上次速度”
+
+        encoder_l_count = 0;
+        encoder_r_count = 0;
+
+        sprintf((char *)uart_tx_buff, "L: %d, R: %d\r\n", filt_velocity_l, filt_velocity_r);
+        UART_print_string(DEBUG_INST, (char *)uart_tx_buff);
+        memset((void *)uart_tx_buff, 0, 128);
+
+        /* 使用编码器计数值作为速度反馈进行PID计算 */
+        float ctrl_l = pid_calculate(&pid_motor_l, (float)filt_velocity_l);
+        float ctrl_r = pid_calculate(&pid_motor_r, (float)filt_velocity_r);
+        if (ctrl_l > 20)
+            ctrl_l = 20;
+        if (ctrl_r > 20)
+            ctrl_r = 20;
+
+        /* 将PID输出转换为电机占空比并施加到电机 */
+        motor_set_duty(2, (uint16_t)(100 * ctrl_l)); 
+        motor_set_duty(1, (uint16_t)(100 * ctrl_r));
+
+        break;
+    }
 
     default:
         break;

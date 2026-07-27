@@ -3,7 +3,11 @@
 
 #include "clock.h"
 #include "key.h"
+#include "motor.h"
+#include "stdio.h"
 #include "ti_msp_dl_config.h"
+#include "uart.h"
+#include <string.h>
 
 extern uint8_t enable_group1_irq;
 

@@ -43,12 +43,28 @@ int main(void)
     Interrupt_Init();
     NVIC_EnableIRQ(GPIOA_INT_IRQn); // 使能GPIOA中断
     NVIC_EnableIRQ(GPIOB_INT_IRQn); // 使能GPIOB中断
-
+    // 初始化OLED显示屏
     OLED_Init();
+
+    motor_init(1);                                                                  // 初始化电机1
+    motor_init(2);                                                                  // 初始化电机2
+    motor_set_direction(1, 0);                                                      // 设置电机1为正转
+    motor_set_direction(2, 0);                                                      // 设置电机2为正转
+    pid_init(&pid_motor_l, PID_INCREMENTAL, MOTOR_KP, MOTOR_KI, MOTOR_KD, 4000, 0); // 初始化左轮PID
+    pid_init(&pid_motor_r, PID_INCREMENTAL, MOTOR_KP, MOTOR_KI, MOTOR_KD, 4000, 0); // 初始化右轮PID
+
+    pid_set_setpoint(&pid_motor_l, 15); // 设置左轮目标速度
+    pid_set_setpoint(&pid_motor_r, 15); // 设置右轮目标速度
+
+    NVIC_EnableIRQ(MOTOR_CONTROL_INST_INT_IRQN); // 使能电机控制中断
 
     my_delay_ms(500); // 等待0.5秒使系统上电完成
 
     while (1)
     {
+        // // 主循环
+        // motor_set_duty(1, 1000); // 设置电机1占空比为2000
+        // motor_set_duty(2, 1000); // 设置电机2占空比为2000
+        my_delay_ms(1000);       // 延时1秒
     }
 }
