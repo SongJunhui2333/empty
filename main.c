@@ -45,6 +45,8 @@ int main(void)
     NVIC_EnableIRQ(GPIOB_INT_IRQn); // 使能GPIOB中断
     // 初始化OLED显示屏
     OLED_Init();
+    // 初始化陀螺仪
+    WIT_Init();
 
     motor_init(1);                                                                  // 初始化电机1
     motor_init(2);                                                                  // 初始化电机2
@@ -65,6 +67,7 @@ int main(void)
         // // 主循环
         // motor_set_duty(1, 1000); // 设置电机1占空比为2000
         // motor_set_duty(2, 1000); // 设置电机2占空比为2000
-        my_delay_ms(1000);       // 延时1秒
+
+        my_delay_ms(1000); // 延时1秒
     }
 }

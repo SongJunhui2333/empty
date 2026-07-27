@@ -8,6 +8,7 @@
 #include "ti_msp_dl_config.h"
 #include "uart.h"
 #include <string.h>
+#include "wit.h"
 
 extern uint8_t enable_group1_irq;
 
