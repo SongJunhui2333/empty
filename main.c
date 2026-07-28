@@ -60,6 +60,8 @@ int main(void)
 
     NVIC_EnableIRQ(MOTOR_CONTROL_INST_INT_IRQN); // 使能电机控制中断
 
+    // NVIC_EnableIRQ(UART_TRANS_INST_INT_IRQN); // 使能UART中断
+
     my_delay_ms(500); // 等待0.5秒使系统上电完成
 
     while (1)
@@ -68,14 +70,23 @@ int main(void)
         // motor_set_duty(1, 1000); // 设置电机1占空比为2000
         // motor_set_duty(2, 1000); // 设置电机2占空比为2000
 
-        Digtal = gw_gray_serial_read();
-        sprintf((char *)uart_tx_buff, "Digtal %d-%d-%d-%d-%d-%d-%d-%d\r\n", (Digtal >> 0) & 0x01, (Digtal >> 1) & 0x01,
-                (Digtal >> 2) & 0x01, (Digtal >> 3) & 0x01, (Digtal >> 4) & 0x01, (Digtal >> 5) & 0x01,
-                (Digtal >> 6) & 0x01, (Digtal >> 7) & 0x01);
-        UART_print_string(DEBUG_INST, (char *)uart_tx_buff);
-        memset((void *)uart_tx_buff, 0, 128);
-        my_delay_ms(100);
+        // 灰度传感器读取测试代码
+        // Digtal = gw_gray_serial_read();
+        // sprintf((char *)uart_tx_buff, "Digtal %d-%d-%d-%d-%d-%d-%d-%d\r\n", (Digtal >> 0) & 0x01, (Digtal >> 1) &
+        // 0x01,
+        //         (Digtal >> 2) & 0x01, (Digtal >> 3) & 0x01, (Digtal >> 4) & 0x01, (Digtal >> 5) & 0x01,
+        //         (Digtal >> 6) & 0x01, (Digtal >> 7) & 0x01);
+        // UART_print_string(DEBUG_INST, (char *)uart_tx_buff);
+        // memset((void *)uart_tx_buff, 0, 128);
+        // my_delay_ms(100);
 
         // my_delay_ms(1000); // 延时1秒
+
+        // if (uart_rx_flag) // 检测到接收完成标志
+        // {
+        //     UART_print_string(DEBUG_INST, (char *)uart_rx_buff);
+        //     // memset((void *)uart_rx_buff, 0, 128); // 清空接收缓冲区
+        //     uart_rx_flag = 0; // 清除接收完成标志
+        // }
     }
 }

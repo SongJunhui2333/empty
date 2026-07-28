@@ -4,6 +4,8 @@
 #include "ti_msp_dl_config.h"
 
 extern volatile uint8_t uart_tx_buff[128]; // uart发送缓冲区
+extern volatile uint8_t uart_rx_buff[128]; // uart接收缓冲区
+extern volatile uint8_t uart_rx_flag;               // uart接收完成标志
 
 // --------------------------- uart相关函数声明 --------------------------- //
 
