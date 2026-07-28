@@ -91,6 +91,8 @@ GPIO4.associatedPins[4].pin.$assign      = "PA16";
 GPIO4.associatedPins[5].$name            = "ENCODER1_B";
 GPIO4.associatedPins[5].direction        = "INPUT";
 GPIO4.associatedPins[5].internalResistor = "PULL_DOWN";
+GPIO4.associatedPins[5].interruptEn      = true;
+GPIO4.associatedPins[5].polarity         = "RISE";
 GPIO4.associatedPins[5].pin.$assign      = "PA15";
 GPIO4.associatedPins[6].$name            = "ENCODER2_A";
 GPIO4.associatedPins[6].direction        = "INPUT";
@@ -101,6 +103,8 @@ GPIO4.associatedPins[6].pin.$assign      = "PA24";
 GPIO4.associatedPins[7].$name            = "ENCODER2_B";
 GPIO4.associatedPins[7].direction        = "INPUT";
 GPIO4.associatedPins[7].internalResistor = "PULL_DOWN";
+GPIO4.associatedPins[7].interruptEn      = true;
+GPIO4.associatedPins[7].polarity         = "RISE";
 GPIO4.associatedPins[7].pin.$assign      = "PA17";
 
 GPIO5.$name                         = "GW_Serial";
