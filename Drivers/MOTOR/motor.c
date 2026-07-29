@@ -10,8 +10,8 @@ uint32_t encoder_l_total = 0; /* 左轮编码器累计计数值（永不清零�
 uint32_t encoder_r_total = 0; /* 右轮编码器累计计数值（永不清零） */
 
 /* ---------------------------- 电机目标速度 ---------------------------- */
-uint16_t motor_l_target_speed = 15;
-uint16_t motor_r_target_speed = 15;
+uint16_t motor_l_base_speed = 50;
+uint16_t motor_r_base_speed = 50;
 
 /* ---------------------------------------------------------------- */
 /*                             测量得的电机速度                             */
@@ -69,11 +69,11 @@ void motor_set_duty(uint8_t motor_id, uint16_t duty)
         duty = 0; // 限制占空比最小值为0
     }
 
-    if (motor_id == 1)
+    if (motor_id == 2)
     {
         DL_Timer_setCaptureCompareValue(PWM_MOTOR_INST, duty, GPIO_PWM_MOTOR_C0_IDX);
     }
-    else if (motor_id == 2)
+    else if (motor_id == 1)
     {
         DL_Timer_setCaptureCompareValue(PWM_MOTOR_INST, duty, GPIO_PWM_MOTOR_C1_IDX);
     }
@@ -96,12 +96,12 @@ void motor_set_direction(uint8_t motor_id, uint8_t direction)
             DL_GPIO_clearPins(DC_MOTOR_AIN1_PORT, DC_MOTOR_AIN1_PIN);
             DL_GPIO_clearPins(DC_MOTOR_AIN2_PORT, DC_MOTOR_AIN2_PIN);
         }
-        else if (direction == 1)
+        else if (direction == 2)
         {
             DL_GPIO_setPins(DC_MOTOR_AIN1_PORT, DC_MOTOR_AIN1_PIN);
             DL_GPIO_clearPins(DC_MOTOR_AIN2_PORT, DC_MOTOR_AIN2_PIN);
         }
-        else if (direction == 2)
+        else if (direction == 1)
         {
             DL_GPIO_clearPins(DC_MOTOR_AIN1_PORT, DC_MOTOR_AIN1_PIN);
             DL_GPIO_setPins(DC_MOTOR_AIN2_PORT, DC_MOTOR_AIN2_PIN);
@@ -114,12 +114,12 @@ void motor_set_direction(uint8_t motor_id, uint8_t direction)
             DL_GPIO_clearPins(DC_MOTOR_BIN1_PORT, DC_MOTOR_BIN1_PIN);
             DL_GPIO_clearPins(DC_MOTOR_BIN2_PORT, DC_MOTOR_BIN2_PIN);
         }
-        else if (direction == 1)
+        else if (direction == 2)
         {
             DL_GPIO_setPins(DC_MOTOR_BIN1_PORT, DC_MOTOR_BIN1_PIN);
             DL_GPIO_clearPins(DC_MOTOR_BIN2_PORT, DC_MOTOR_BIN2_PIN);
         }
-        else if (direction == 2)
+        else if (direction == 1)
         {
             DL_GPIO_clearPins(DC_MOTOR_BIN1_PORT, DC_MOTOR_BIN1_PIN);
             DL_GPIO_setPins(DC_MOTOR_BIN2_PORT, DC_MOTOR_BIN2_PIN);

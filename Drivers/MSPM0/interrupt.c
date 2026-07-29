@@ -240,20 +240,20 @@ void GROUP1_IRQHandler(void)
     break;
 
     // 编码器记录
-    case DC_MOTOR_ENCODER2_A_IIDX: // 编码器2（电机2=左轮）
+    case DC_MOTOR_ENCODER1_A_IIDX: // 编码器2（电机2=左轮）
         encoder_r_count++;
         encoder_r_total++;
         break;
-    case DC_MOTOR_ENCODER2_B_IIDX: // 编码器2（电机2=左轮）
+    case DC_MOTOR_ENCODER1_B_IIDX: // 编码器2（电机2=左轮）
         encoder_r_count++;
         encoder_r_total++;
         break;
 
-    case DC_MOTOR_ENCODER1_A_IIDX: // 编码器1（电机1=右轮）
+    case DC_MOTOR_ENCODER2_A_IIDX: // 编码器1（电机1=右轮）
         encoder_l_count++;
         encoder_l_total++;
         break;
-    case DC_MOTOR_ENCODER1_B_IIDX: // 编码器1（电机1=右轮）
+    case DC_MOTOR_ENCODER2_B_IIDX: // 编码器1（电机1=右轮）
         encoder_l_count++;
         encoder_l_total++;
         break;
@@ -301,9 +301,9 @@ void MOTOR_CONTROL_INST_IRQHandler(void)
         encoder_l_count = 0;
         encoder_r_count = 0;
 
-        sprintf((char *)uart_tx_buff, "L: %d, R: %d\r\n", filt_velocity_l, filt_velocity_r);
-        UART_print_string(DEBUG_INST, (char *)uart_tx_buff);
-        memset((void *)uart_tx_buff, 0, 128);
+        // sprintf((char *)uart_tx_buff, "L: %d, R: %d\r\n", filt_velocity_l, filt_velocity_r);
+        // UART_print_string(DEBUG_INST, (char *)uart_tx_buff);
+        // memset((void *)uart_tx_buff, 0, 128);
 
         /* 使用编码器计数值作为速度反馈进行PID计算 */
         float ctrl_l = pid_calculate(&pid_motor_l, (float)filt_velocity_l);
@@ -317,6 +317,22 @@ void MOTOR_CONTROL_INST_IRQHandler(void)
         motor_set_duty(2, (uint16_t)(100 * ctrl_r));
         motor_set_duty(1, (uint16_t)(100 * ctrl_l));
 
+        break;
+    }
+
+    default:
+        break;
+    }
+}
+
+void TIMER_BASE_INST_IRQHandler(void)
+{
+    switch (DL_Timer_getPendingInterrupt(TIMER_BASE_INST))
+    {
+    case DL_TIMER_IIDX_LOAD: {
+        // 处理定时器中断
+        gw_gray_serial_tick();
+        gray_trace_tick();
         break;
     }
 

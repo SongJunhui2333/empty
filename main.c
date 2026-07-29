@@ -55,10 +55,12 @@ int main(void)
     pid_init(&pid_motor_l, PID_INCREMENTAL, MOTOR_KP, MOTOR_KI, MOTOR_KD, 4000, 0); // 初始化左轮PID
     pid_init(&pid_motor_r, PID_INCREMENTAL, MOTOR_KP, MOTOR_KI, MOTOR_KD, 4000, 0); // 初始化右轮PID
 
-    pid_set_setpoint(&pid_motor_l, 40); // 设置左轮目标速度
-    pid_set_setpoint(&pid_motor_r, 40); // 设置右轮目标速度
+    pid_set_setpoint(&pid_motor_l, motor_l_base_speed); // 设置左轮目标速度
+    pid_set_setpoint(&pid_motor_r, motor_r_base_speed); // 设置右轮目标速度
 
     NVIC_EnableIRQ(MOTOR_CONTROL_INST_INT_IRQN); // 使能电机控制中断
+
+    NVIC_EnableIRQ(TIMER_BASE_INST_INT_IRQN); // 使能基础定时器中断
 
     // NVIC_EnableIRQ(UART_TRANS_INST_INT_IRQN); // 使能UART中断
 
@@ -71,14 +73,17 @@ int main(void)
         // motor_set_duty(2, 1000); // 设置电机2占空比为2000
 
         // 灰度传感器读取测试代码
-        // Digtal = gw_gray_serial_read();
-        // sprintf((char *)uart_tx_buff, "Digtal %d-%d-%d-%d-%d-%d-%d-%d\r\n", (Digtal >> 0) & 0x01, (Digtal >> 1) &
-        // 0x01,
-        //         (Digtal >> 2) & 0x01, (Digtal >> 3) & 0x01, (Digtal >> 4) & 0x01, (Digtal >> 5) & 0x01,
-        //         (Digtal >> 6) & 0x01, (Digtal >> 7) & 0x01);
+        // sprintf((char *)uart_tx_buff, "Digtal %d-%d-%d-%d-%d-%d-%d-%d\r\n", gw_gray_sensor[0], gw_gray_sensor[1],
+        //         gw_gray_sensor[2], gw_gray_sensor[3], gw_gray_sensor[4], gw_gray_sensor[5], gw_gray_sensor[6],
+        //         gw_gray_sensor[7]);
         // UART_print_string(DEBUG_INST, (char *)uart_tx_buff);
         // memset((void *)uart_tx_buff, 0, 128);
-        // my_delay_ms(100);
+
+        sprintf((char *)uart_tx_buff, "L: %d, R: %d", filt_velocity_l, filt_velocity_r);
+        OLED_ShowString(0, 0, (char *)uart_tx_buff, 16);
+        memset((void *)uart_tx_buff, 0, 128);
+
+        my_delay_ms(100);
 
         // my_delay_ms(1000); // 延时1秒
 

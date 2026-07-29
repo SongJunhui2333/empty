@@ -16,8 +16,8 @@ extern uint32_t encoder_l_total;
 extern uint32_t encoder_r_total;
 
 //---------------------------- 电机目标速度 ---------------------------- */
-extern uint16_t motor_l_target_speed;
-extern uint16_t motor_r_target_speed;
+extern uint16_t motor_l_base_speed;
+extern uint16_t motor_r_base_speed;
 
 //---------------------------- 测量得的电机速度 ---------------------------- */
 extern int filt_velocity_r; // 滤波后的速度

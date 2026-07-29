@@ -30,7 +30,9 @@
                 "${workspaceFolder}/HAL",
                 "${workspaceFolder}/Drivers/UART",
                 "${workspaceFolder}/Drivers/WIT",
-                "${workspaceFolder}/Drivers/GW_GRAY"
+                "${workspaceFolder}/Drivers/GW_GRAY",
+                "${workspaceFolder}/APP",
+                "${workspaceFolder}/APP/GRAY_TRACE",
             ],
             "defines": [
                 "__MSPM0G3507__"

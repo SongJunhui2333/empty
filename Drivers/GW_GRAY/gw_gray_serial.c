@@ -1,6 +1,7 @@
 #include "gw_gray_serial.h"
 
 unsigned char Digtal;
+uint8_t gw_gray_sensor[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
 /**
  * @brief 读取灰度传感器的值
@@ -27,4 +28,21 @@ uint8_t gw_gray_serial_read()
     }
 
     return ret;
+}
+
+void gw_gray_serial_tick()
+{
+    static uint8_t Count;
+
+    Count++;
+    if (Count >= 10) // 每20ms读取一次灰度传感器
+    {
+        Count = 0;
+        Digtal = gw_gray_serial_read();
+        for (int i = 1; i < 8; i++)
+        {
+            gw_gray_sensor[i - 1] = !((Digtal >> i) & 0x01);
+        }
+        gw_gray_sensor[7] = !(Digtal & 0x01); // 读取第一个传感器的值
+    }
 }
