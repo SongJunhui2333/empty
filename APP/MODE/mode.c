@@ -59,12 +59,12 @@ void Mode1_Exit(void)
 
 static uint32_t question2_start_time = 0;                              // 记录模式2开始的时间
 uint8_t question2_flag = 0;                                            // 模式2的标志位，0表示未开始，1表示已开始
-const short question2_trace_weights[8] = {-8, -4, -2, -1, 1, 2, 4, 8}; // 模式2的循迹权重数组
+const short question2_trace_weights[8] = {-8, -6, -2, -1, 1, 2, 6, 8}; // 模式2的循迹权重数组
 
 pid_t question2_pid_heading;                  // 模式2的PID控制器实例，用于调整小车的转向
 #define QUESTION2_HEADING_KP (4.5f * 0.6f)    // 模式2的PID控制器比例系数
-#define QUESTION2_HEADING_KI (0.0f)           // 模式2的PID控制器积分系数
-#define QUESTION2_HEADING_KD (1.8f)           // 模式2的PID控制器微分系数
+#define QUESTION2_HEADING_KI (0.035f)         // 模式2的PID控制器积分系数
+#define QUESTION2_HEADING_KD (18.0f * 0.3f)   // 模式2的PID控制器微分系数
 #define QUESTION2_HEADING_OUTPUT_MAX (40.0f)  // 模式2的PID控制器输出最大值
 #define QUESTION2_HEADING_OUTPUT_MIN (-40.0f) // 模式2的PID控制器输出最小值
 
@@ -180,4 +180,23 @@ void Mode6_Loop(void)
 void Mode6_Exit(void)
 {
     // 在这里添加模式6的退出代码
+}
+
+/* ---------------------------------------------------------------- */
+/*                            模式7：调节参数模式                            */
+/* ---------------------------------------------------------------- */
+
+void Mode7_Init(void)
+{
+    // 在这里添加模式7的初始化代码
+}
+
+void Mode7_Loop(void)
+{
+    // 在这里添加模式7的循环代码
+}
+
+void Mode7_Exit(void)
+{
+    // 在这里添加模式7的退出代码
 }
