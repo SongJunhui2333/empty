@@ -1,6 +1,8 @@
 #ifndef MODE_H
 #define MODE_H
 
+#include "Emm_V5.h"
+#include "ZDT_MOTOR_Control.h"
 #include "clock.h"
 #include "key.h"
 #include "motor.h"
@@ -19,7 +21,7 @@ void Mode1_Exit(void);
 /* --------------------------- 模式2：第二问代码 -------------------------- */
 #define QUESTION2_MOTOR_BASE_SPEED 70          // 模式2的电机基础速度
 extern const short question2_trace_weights[8]; // 模式2的循迹权重数组
-extern pid_t question2_pid_heading;            // 记录模式2开始的时间
+extern pid_t question2_pid_heading;            // 模式2的PID控制器实例，用于调整小车的转向
 #define QUESTION2_HEADING_SETPOINT (0.0f)      // 模式2的PID控制器目标航向值
 
 void Mode2_Init(void);
@@ -33,6 +35,11 @@ void Mode3_Loop(void);
 void Mode3_Exit(void);
 
 /* --------------------------- 模式4：第四问代码 -------------------------- */
+extern pid_t question4_pid_heading;            // 模式4的PID控制器实例，用于调整小车的转向
+extern uint8_t question4_flag;                 // 模式4的标志位，0表示未开始，1表示已开始
+extern const short question4_trace_weights[8]; // 模式4的循迹权重数组
+extern uint32_t question4_start_time;          // 记录模式4开始的时间
+#define QUESTION4_MOTOR_MAX_SPEED 30           // 模式4的电机最大速度
 void Mode4_Init(void);
 void Mode4_Loop(void);
 void Mode4_Exit(void);
@@ -51,5 +58,10 @@ void Mode6_Exit(void);
 void Mode7_Init(void);
 void Mode7_Loop(void);
 void Mode7_Exit(void);
+
+/* ------------------------- 模式8：调节第三问电机参数 ------------------------ */
+void Mode8_Init(void);
+void Mode8_Loop(void);
+void Mode8_Exit(void);
 
 #endif

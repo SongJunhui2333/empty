@@ -64,13 +64,28 @@ int main(void)
 
     NVIC_EnableIRQ(UART_MAIXCAM_INST_INT_IRQN); // 使能MAIXCAM UART中断
 
+    // 初始化电机参数
+    Emm_V5_En_Control(1, true, false);
+
+    Emm_V5_Origin_Trigger_Return(1, 0, false);
+
     my_delay_ms(500); // 等待0.5秒使系统上电完成
+
+    // Emm_V5_Pos_Control(1, 0, 100, 0, 120, 1, false);
+    // ZDT_MOTOR_Pos_Control(1, ZDT_MOTOR_UP, ZDT_MOTOR_Default_Vel, ZDT_MOTOR_Default_Acc, 120, 1);
 
     while (1)
     {
         // // 主循环
 
         // UART_print_string(UART_MAIXCAM_INST, "Main Loop Running...\r\n");
+
+        // Emm_V5_Pos_Control(1, 0, 100, 0, 120, 1, false);
+
+        // delay_ms(1000); // 延时1秒
+        // Emm_V5_Pos_Control(1, 1, 100, 0, 120, 1, false);
+
+        // delay_ms(1000); // 延时1秒
 
         if (CurrentMode == NextMode) // 如果当前模式与下一个模式相同，则继续执行当前模式
         {
@@ -96,6 +111,9 @@ int main(void)
                 break;
             case 7:
                 Mode7_Loop();
+                break;
+            case 8:
+                Mode8_Loop();
                 break;
             default:
                 break;
@@ -126,6 +144,9 @@ int main(void)
             case 7:
                 Mode7_Exit();
                 break;
+            case 8:
+                Mode8_Exit();
+                break;
             default:
                 break;
             }
@@ -152,6 +173,9 @@ int main(void)
                 break;
             case 7:
                 Mode7_Init();
+                break;
+            case 8:
+                Mode8_Init();
                 break;
             default:
                 break;

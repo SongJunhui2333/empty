@@ -34,7 +34,8 @@
                 "${workspaceFolder}/Drivers/ZDT_MOTOR",
                 "${workspaceFolder}/APP",
                 "${workspaceFolder}/APP/GRAY_TRACE",
-                "${workspaceFolder}/APP/MODE"
+                "${workspaceFolder}/APP/MODE",
+                "${workspaceFolder}/APP/ZDT_MOTOR_CONTROL"
             ],
             "defines": [
                 "__MSPM0G3507__"

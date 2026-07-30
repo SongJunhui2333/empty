@@ -8,6 +8,8 @@
 #include "string.h"
 
 // #include "mpu6050.h"
+#include "Emm_V5.h"
+#include "ZDT_MOTOR_Control.h"
 #include "buzzer.h"
 #include "gw_gray_serial.h"
 #include "key.h"

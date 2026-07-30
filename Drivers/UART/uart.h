@@ -6,6 +6,7 @@
 extern volatile uint8_t uart_tx_buff[128]; // uart发送缓冲区
 extern volatile uint8_t uart_rx_buff[128]; // uart接收缓冲区
 extern volatile uint8_t uart_rx_flag;               // uart接收完成标志
+extern volatile uint8_t uart_maixcam_rx_done;       // MAIXCAM UART一帧数据接收完成标志
 
 // --------------------------- uart相关函数声明 --------------------------- //
 

@@ -72,5 +72,9 @@ void gray_trace_tick()
                 NextMode = 1; // 切换到模式1，重新选择问题
             }
         }
+        else if (question4_flag == 1)
+        {
+            uint8_t gray_sum = get_gray_num(gw_gray_sensor);
+        }
     }
 }
