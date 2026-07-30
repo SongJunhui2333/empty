@@ -45,9 +45,9 @@ void gray_trace(uint8_t *sensorValues, const short *weights, uint16_t motor_l_ba
 
     float steering = pid_calculate(&question2_pid_heading, calcu); // 使用PID计算转向调整值
 
-    // sprintf((char *)uart_tx_buff, "calc: %.2f,steering: %.2f\r\n", calcu, steering);
-    // UART_print_string(DEBUG_INST, (char *)uart_tx_buff);
-    // memset((void *)uart_tx_buff, 0, 128);
+    sprintf((char *)uart_tx_buff, "checkingData: %.2f,%.2f\r\n", calcu, steering);
+    UART_print_string(DEBUG_INST, (char *)uart_tx_buff);
+    memset((void *)uart_tx_buff, 0, 128);
 
     pid_set_setpoint(&pid_motor_l, motor_l_base_speed - steering);
     pid_set_setpoint(&pid_motor_r, motor_r_base_speed + steering);

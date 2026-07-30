@@ -5,12 +5,11 @@ uint8_t NextMode = 1;    // 下一个模式编号，0表示未选择模式
 
 // uint8_t KeyNum;
 
-uint8_t Q_Select_Num = 0; // 问题选择编号，0表示未选择问题
-
 /* ---------------------------------------------------------------- */
 /*                             模式1：初始选择界面                          */
 /* ---------------------------------------------------------------- */
 
+uint8_t Q_Select_Num = 0;       // 问题选择编号，0表示未选择问题
 static float Time_Record = 0.0; // 记录模式2的运行时间
 
 void Mode1_Init(void)
@@ -26,11 +25,11 @@ void Mode1_Loop(void)
     uint8_t KeyNum = Key_GetNum();
     if (KeyNum == 1) // 按键1被按下
     {
-        Q_Select_Num = (Q_Select_Num + 1) % 6; // 循环选择问题编号
+        Q_Select_Num = (Q_Select_Num + 1) % 8; // 循环选择问题编号
     }
     else if (KeyNum == 2) // 按键2被按下
     {
-        Q_Select_Num = (Q_Select_Num + 5) % 6; // 循环选择问题编号
+        Q_Select_Num = (Q_Select_Num + 7) % 8; // 循环选择问题编号
     }
 
     if (KeyNum == 3) // 按键3被按下
@@ -61,12 +60,12 @@ static uint32_t question2_start_time = 0;                              // 记录
 uint8_t question2_flag = 0;                                            // 模式2的标志位，0表示未开始，1表示已开始
 const short question2_trace_weights[8] = {-8, -6, -2, -1, 1, 2, 6, 8}; // 模式2的循迹权重数组
 
-pid_t question2_pid_heading;                  // 模式2的PID控制器实例，用于调整小车的转向
-#define QUESTION2_HEADING_KP (4.5f * 0.6f)    // 模式2的PID控制器比例系数
-#define QUESTION2_HEADING_KI (0.035f)         // 模式2的PID控制器积分系数
-#define QUESTION2_HEADING_KD (18.0f * 0.3f)   // 模式2的PID控制器微分系数
-#define QUESTION2_HEADING_OUTPUT_MAX (40.0f)  // 模式2的PID控制器输出最大值
-#define QUESTION2_HEADING_OUTPUT_MIN (-40.0f) // 模式2的PID控制器输出最小值
+pid_t question2_pid_heading;                          // 模式2的PID控制器实例，用于调整小车的转向
+static float QUESTION2_HEADING_KP = (4.5f * 0.6f);    // 模式2的PID控制器比例系数
+static float QUESTION2_HEADING_KI = (0.035f);         // 模式2的PID控制器积分系数
+static float QUESTION2_HEADING_KD = (18.0f * 0.3f);   // 模式2的PID控制器微分系数
+static float QUESTION2_HEADING_OUTPUT_MAX = (40.0f);  // 模式2的PID控制器输出最大值
+static float QUESTION2_HEADING_OUTPUT_MIN = (-40.0f); // 模式2的PID控制器输出最小值
 
 void Mode2_Init(void)
 {
@@ -75,6 +74,7 @@ void Mode2_Init(void)
     OLED_ShowString(0, 0, (uint8_t *)"Question 2", 16);
     question2_start_time = tick_ms;
 
+    pid_reset(&question2_pid_heading); // 重置模式2的PID控制器
     // 初始化模式2的PID控制器
     pid_init(&question2_pid_heading, PID_POSITION, QUESTION2_HEADING_KP, QUESTION2_HEADING_KI, QUESTION2_HEADING_KD,
              QUESTION2_HEADING_OUTPUT_MAX, QUESTION2_HEADING_OUTPUT_MIN);
@@ -103,6 +103,9 @@ void Mode2_Exit(void)
 
     pid_set_setpoint(&pid_motor_l, 0); // 停止左轮电机
     pid_set_setpoint(&pid_motor_r, 0); // 停止右轮电机
+    delay_ms(300);                     // 等待电机停止
+    motor_set_direction(1, 0);         // 设置左轮电机方向为停止
+    motor_set_direction(2, 0);         // 设置右轮电机方向为停止
     pid_reset(&question2_pid_heading); // 重置模式2的PID控制器
 }
 
@@ -186,17 +189,45 @@ void Mode6_Exit(void)
 /*                            模式7：调节参数模式                            */
 /* ---------------------------------------------------------------- */
 
+uint8_t Param_Select_Num = 0; // 参数选择编号，0表示未选择参数
+
 void Mode7_Init(void)
 {
     // 在这里添加模式7的初始化代码
+    OLED_Clear();
+    OLED_ShowString(0, 0, (uint8_t *)"Mode 7: Adjust MODE", 16);
+    OLED_ShowString(0, 2, (uint8_t *)"Choose Parameter:", 8);
 }
 
 void Mode7_Loop(void)
 {
     // 在这里添加模式7的循环代码
+
+    // 在这里添加模式1的循环代码
+    uint8_t KeyNum = Key_GetNum();
+    if (KeyNum == 1) // 按键1被按下
+    {
+        Param_Select_Num = (Param_Select_Num + 1) % 7; // 循环选择问题编号
+    }
+    else if (KeyNum == 2) // 按键2被按下
+    {
+        Param_Select_Num = (Param_Select_Num + 6) % 7; // 循环选择问题编号
+    }
+
+    if (KeyNum == 3) // 按键3被按下
+    {
+        NextMode = Param_Select_Num; // 切换到选择的问题模式
+    }
+    if (KeyNum == 4) // 按键4被按下
+    {
+        NextMode = 1; // 切换到选择的问题模式
+    }
+    sprintf((char *)oled_show_buff, "Param: %d", Param_Select_Num);
+    OLED_ShowString(0, 4, (uint8_t *)oled_show_buff, 16);
 }
 
 void Mode7_Exit(void)
 {
     // 在这里添加模式7的退出代码
+    Param_Select_Num = 0; // 重置参数选择编号
 }

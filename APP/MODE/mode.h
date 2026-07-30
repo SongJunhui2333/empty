@@ -42,9 +42,14 @@ void Mode5_Init(void);
 void Mode5_Loop(void);
 void Mode5_Exit(void);
 
-// 模式6：第六问代码
+/* --------------------------- 模式6：第六问代码 -------------------------- */
 void Mode6_Init(void);
 void Mode6_Loop(void);
 void Mode6_Exit(void);
+
+/* -------------------------- 模式7：调参入口代码 -------------------------- */
+void Mode7_Init(void);
+void Mode7_Loop(void);
+void Mode7_Exit(void);
 
 #endif

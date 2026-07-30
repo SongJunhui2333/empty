@@ -62,44 +62,15 @@ int main(void)
 
     NVIC_EnableIRQ(TIMER_BASE_INST_INT_IRQN); // 使能基础定时器中断
 
+    NVIC_EnableIRQ(UART_MAIXCAM_INST_INT_IRQN); // 使能MAIXCAM UART中断
+
     my_delay_ms(500); // 等待0.5秒使系统上电完成
 
     while (1)
     {
         // // 主循环
 
-        // 灰度传感器读取测试代码
-        // sprintf((char *)uart_tx_buff, "Digtal %d-%d-%d-%d-%d-%d-%d-%d\r\n", gw_gray_sensor[0], gw_gray_sensor[1],
-        //         gw_gray_sensor[2], gw_gray_sensor[3], gw_gray_sensor[4], gw_gray_sensor[5], gw_gray_sensor[6],
-        //         gw_gray_sensor[7]);
-        // UART_print_string(DEBUG_INST, (char *)uart_tx_buff);
-        // memset((void *)uart_tx_buff, 0, 128);
-
-        // sprintf((char *)oled_buff, "L: %d, R: %d", filt_velocity_l, filt_velocity_r);
-        // OLED_ShowString(0, 0, (uint8_t *)oled_buff, 16);
-
-        // float_t time = (float)tick_ms / 1000.0;
-        // sprintf((char *)oled_buff, "time: %.2f", time);
-        // OLED_ShowString(0, 2, (uint8_t *)oled_buff, 16);
-
-        // uint8_t key_num = Key_GetNum(); // 获取按键编号
-        // if (key_num == 1)               // 按键1被按下
-        // {
-        //     key_state_flag = (key_state_flag + 1) % 7;
-        // }
-        // else if (key_num == 2) // 按键2被按下
-        // {
-        //     key_state_flag = (key_state_flag - 1 + 7) % 7;
-        // }
-        // else if (key_num == 3) // 按键3被按下
-        // {
-        //     key_start_flag = !key_start_flag; // 切换启动/停止状态
-        // }
-        // sprintf((char *)oled_buff, "key_state: %d", key_state_flag);
-        // OLED_ShowString(0, 4, (uint8_t *)oled_buff, 16);
-
-        // sprintf((char *)oled_buff, "key_start: %d", key_start_flag);
-        // OLED_ShowString(0, 6, (uint8_t *)oled_buff, 16);
+        // UART_print_string(UART_MAIXCAM_INST, "Main Loop Running...\r\n");
 
         if (CurrentMode == NextMode) // 如果当前模式与下一个模式相同，则继续执行当前模式
         {
@@ -122,6 +93,9 @@ int main(void)
                 break;
             case 6:
                 Mode6_Loop();
+                break;
+            case 7:
+                Mode7_Loop();
                 break;
             default:
                 break;
@@ -148,6 +122,10 @@ int main(void)
                 break;
             case 6:
                 Mode6_Exit();
+                break;
+            case 7:
+                Mode7_Exit();
+                break;
             default:
                 break;
             }
@@ -171,6 +149,9 @@ int main(void)
                 break;
             case 6:
                 Mode6_Init();
+                break;
+            case 7:
+                Mode7_Init();
                 break;
             default:
                 break;

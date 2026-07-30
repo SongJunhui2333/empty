@@ -14,7 +14,7 @@ uint8_t get_gpio_state(GPIO_Regs *gpio_regs, uint32_t key)
         return 0;
 }
 
-uint8_t Key_GetState()
+uint8_t Key_GetState(void)
 {
     uint8_t key_num = 0;
     if (!get_gpio_state(KEY_K_1_PORT, KEY_K_1_PIN)) // 检测到按键按下
@@ -29,6 +29,23 @@ uint8_t Key_GetState()
     {
         key_num = 3; // 按键3被按下
     }
+    else if (!get_gpio_state(KEY_K_4_PORT, KEY_K_4_PIN)) // 检测到按键按下
+    {
+        key_num = 4; // 按键4被按下
+    }
+    else if (!get_gpio_state(KEY_K_5_PORT, KEY_K_5_PIN)) // 检测到按键按下
+    {
+        key_num = 5; // 按键5被按下
+    }
+    else if (!get_gpio_state(KEY_K_6_PORT, KEY_K_6_PIN)) // 检测到按键按下
+    {
+        key_num = 6; // 按键6被按下
+    }
+    else if (!get_gpio_state(KEY_K_7_PORT, KEY_K_7_PIN)) // 检测到按键按下
+    {
+        key_num = 7; // 按键7被按下
+    }
+
     return key_num;
 }
 
