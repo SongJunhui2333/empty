@@ -7,5 +7,7 @@ extern uint8_t key_state_flag; // 按键状态标志位
 extern uint8_t key_start_flag; // 启动/停止标志位，0表示停止，1表示启动
 
 uint8_t get_gpio_state(GPIO_Regs *gpio_regs, uint32_t key);
+uint8_t Key_GetNum();
+void Key_Tick(void);
 
 #endif

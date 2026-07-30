@@ -12,6 +12,7 @@
 #include "gw_gray_serial.h"
 #include "key.h"
 #include "light.h"
+#include "mode.h"
 #include "oled_hardware_i2c.h"
 #include "uart.h"
 #include "wit.h"

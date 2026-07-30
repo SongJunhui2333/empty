@@ -53,6 +53,8 @@
                                     <listOptionValue value="${PROJECT_ROOT}/Drivers/WIT"/>
                                     <listOptionValue value="${PROJECT_ROOT}/Drivers/GW_GRAY"/>
                                     <listOptionValue value="${PROJECT_ROOT}/APP/GRAY_TRACE"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/Drivers/ZDT_MOTOR"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/APP/MODE"/>
                                 </option>
                                 <option id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_5.1.compilerID.DEFINE.800094296" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_5.1.compilerID.DEFINE" valueType="definedSymbols">
                                     <listOptionValue value="${COM_TI_MSPM0_SDK_SYMBOLS}"/>

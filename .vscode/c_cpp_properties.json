@@ -31,8 +31,10 @@
                 "${workspaceFolder}/Drivers/UART",
                 "${workspaceFolder}/Drivers/WIT",
                 "${workspaceFolder}/Drivers/GW_GRAY",
+                "${workspaceFolder}/Drivers/ZDT_MOTOR",
                 "${workspaceFolder}/APP",
                 "${workspaceFolder}/APP/GRAY_TRACE",
+                "${workspaceFolder}/APP/MODE"
             ],
             "defines": [
                 "__MSPM0G3507__"

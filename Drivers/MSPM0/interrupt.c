@@ -220,25 +220,6 @@ void GROUP1_IRQHandler(void)
 
     switch (DL_GPIO_getPendingInterrupt(GPIOA))
     {
-    case KEY_K_1_IIDX: {
-        // 处理 Key_State_pin0 的中断
-        my_delay_ms(10);                                // 简单的消抖处理
-        if (!get_gpio_state(KEY_K_1_PORT, KEY_K_1_PIN)) // 确认按键仍然被按下
-        {
-            key_state_flag = (key_state_flag + 1) % 5; // 设置按键状态标志位
-        }
-    }
-    break;
-    case KEY_K_2_IIDX: {
-        // 处理 Key_State_pin1 的中断
-        my_delay_ms(10);                                // 简单的消抖处理
-        if (!get_gpio_state(KEY_K_2_PORT, KEY_K_2_PIN)) // 确认按键仍然被按下
-        {
-            key_state_flag = (key_state_flag - 1 + 5) % 5; // 设置按键状态标志位
-        }
-    }
-    break;
-
     // 编码器记录
     case DC_MOTOR_ENCODER1_A_IIDX: // 编码器2（电机2=左轮）
         encoder_r_count++;
@@ -264,15 +245,6 @@ void GROUP1_IRQHandler(void)
 
     switch (DL_GPIO_getPendingInterrupt(GPIOB))
     {
-    case KEY_K_3_IIDX: {
-        // 处理 Key_State_pin2 的中断
-        my_delay_ms(10);                                // 简单的消抖处理
-        if (!get_gpio_state(KEY_K_3_PORT, KEY_K_3_PIN)) // 确认按键仍然被按下
-        {
-            key_start_flag = !key_start_flag; // 切换启动/停止标志位
-        }
-    }
-    break;
 
     default:
         break;
@@ -331,8 +303,9 @@ void TIMER_BASE_INST_IRQHandler(void)
     {
     case DL_TIMER_IIDX_LOAD: {
         // 处理定时器中断
-        gw_gray_serial_tick();
+        gw_gray_serial_tick(); // 处理灰度传感器串口数据
         gray_trace_tick();
+        Key_Tick();
         break;
     }
 

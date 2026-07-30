@@ -1,7 +1,5 @@
 #include "pid.h"
 
-
-
 /**
  * @brief 初始化PID控制器
  */
@@ -20,8 +18,8 @@ void pid_init(pid_t *pid, pid_type_t mode, float kp, float ki, float kd, float m
     pid->prev_error = 0.0f;
 
     pid->integral = 0.0f;
-    pid->integral_max = max_out * 1.0f; /* 积分限幅默认为输出的100% */
-    pid->integral_min = min_out * 1.0f;
+    pid->integral_max = max_out * 0.8f; /* 积分限幅默认为输出的80% */
+    pid->integral_min = min_out * 0.8f;
 
     pid->output_max = max_out;
     pid->output_min = min_out;
