@@ -121,29 +121,62 @@ void Mode2_Exit(void)
 
 /* ---------------------------------------------------------------- */
 /*                             模式3：第三问代码                            */
-/*                  阶段1:管道下降 → 阶段2:管道上升 → 阶段3:球控              */
+/*          球从 O → +85 → 折返 → -85 并稳定；模式六同款 PID + 微扰          */
 /* ---------------------------------------------------------------- */
 
-/* ---------- 可调参数 ---------- */
-#define QUESTION3_PHASE1_TIME_MS 800   // 阶段1持续时间（毫秒）
-#define QUESTION3_PHASE1_PULSES 110    // 阶段1管道下降脉冲数
-#define QUESTION3_PHASE2_TIME_MS 1000  // 阶段2持续时间（毫秒）
-#define QUESTION3_PHASE2_PULSES 110    // 阶段2管道上升脉冲数
-#define QUESTION3_MOTOR_MAX_PULSES 290 // 电机正反转最大脉冲限幅
+/* ---- 目标与判据 ---- */
+#define QUESTION3_TARGET_PLUS       (85.0f)   /* 第一目标：+85 像素 */
+#define QUESTION3_TARGET_MINUS      (-105.0f)  /* 最终目标：-85 像素 */
+#define QUESTION3_POS_TOL           (15.0f)    /* 到位判据：距离目标 ≤ 5 像素 */
+#define QUESTION3_VEL_TOL           (10.0f)   /* 稳定判据：球速 ≤ 10 像素/帧 */
+#define QUESTION3_STABLE_TIME_MS    (150U)    /* -85 处连续稳定 150 ms */
+#define QUESTION3_MOTOR_OUTPUT_MAX  280.0f    /* 电机正向最大脉冲 */
+#define QUESTION3_MOTOR_OUTPUT_MIN  -280.0f   /* 电机反向最大脉冲 */
 
-/* ---------- 球控PID ---------- */
+/* ---- PID（同模式六风格：单环 + 微扰） ---- */
 static pid_t question3_pid_motor;
-static float QUESTION3_MOTOR_KP = 2.8f;
-static float QUESTION3_MOTOR_KI = 0.01f;
-static float QUESTION3_MOTOR_KD = 15.0f;
-static float QUESTION3_MOTOR_OUTPUT_MAX = 290.0f;
-static float QUESTION3_MOTOR_OUTPUT_MIN = -290.0f;
+static float QUESTION3_POS_KP = 2.7f;
+static float QUESTION3_POS_KI = 0.015f;
+static float QUESTION3_POS_KD = 40.0f;
 
-/* ---------- 状态定义 ---------- */
-#define Q3_STATE_IDLE 0         // 等待按键
-#define Q3_STATE_PHASE1_DOWN 1  // 管道下降
-#define Q3_STATE_PHASE2_UP 2    // 管道上升
-#define Q3_STATE_BALL_CONTROL 3 // 小球平衡控制
+#define QUESTION3_VEL_STILL 20  /* 判定小球静止的速度阈值 */
+#define QUESTION3_NUDGE_STEP 5  /* 每次微扰增量（脉冲） */
+#define QUESTION3_NUDGE_MAX  80 /* 微扰累积上限 */
+
+/* ---- 状态机 ---- */
+typedef enum {
+    Q3_IDLE = 0,
+    Q3_GO_PLUS,
+    Q3_GO_MINUS,
+    Q3_FINISHED
+} q3_state_t;
+
+static q3_state_t q3_state = Q3_IDLE;
+static uint8_t  q3_test_flag = 0;
+static uint32_t q3_stable_start = 0;
+static uint32_t q3_start_time = 0;
+
+static float q3_absf(float v) { return (v >= 0.0f) ? v : -v; }
+
+static void q3_set_target(float target)
+{
+    pid_reset(&question3_pid_motor);
+    pid_set_setpoint(&question3_pid_motor, target);
+    q3_stable_start = 0;
+}
+
+static void q3_send_motor(float motor_pos)
+{
+    if (motor_pos > QUESTION3_MOTOR_OUTPUT_MAX)
+        motor_pos = QUESTION3_MOTOR_OUTPUT_MAX;
+    if (motor_pos < QUESTION3_MOTOR_OUTPUT_MIN)
+        motor_pos = QUESTION3_MOTOR_OUTPUT_MIN;
+
+    if (motor_pos >= 0.0f)
+        Emm_V5_Pos_Control(1, 0, 500, 200, (uint32_t)motor_pos, 1, false);
+    else
+        Emm_V5_Pos_Control(1, 1, 500, 200, (uint32_t)(-motor_pos), 1, false);
+}
 
 void Mode3_Init(void)
 {
@@ -152,118 +185,108 @@ void Mode3_Init(void)
     OLED_ShowString(0, 3, (uint8_t *)"Key3: Start", 8);
     OLED_ShowString(0, 5, (uint8_t *)"Key4: Exit", 8);
 
-    /* ---- 初始化 PID ---- */
-    pid_init(&question3_pid_motor, PID_POSITION, QUESTION3_MOTOR_KP, QUESTION3_MOTOR_KI, QUESTION3_MOTOR_KD,
+    pid_init(&question3_pid_motor, PID_POSITION,
+             QUESTION3_POS_KP, QUESTION3_POS_KI, QUESTION3_POS_KD,
              QUESTION3_MOTOR_OUTPUT_MAX, QUESTION3_MOTOR_OUTPUT_MIN);
-    pid_set_setpoint(&question3_pid_motor, 0.0f);
+
+    q3_test_flag = 0;
+    q3_state = Q3_IDLE;
+    q3_stable_start = 0;
 
     Emm_V5_Origin_Trigger_Return(1, 0, false);
 }
 
 void Mode3_Loop(void)
 {
-    static uint32_t test_start_time = 0;
-    static uint8_t test_flag = 0;
-    static uint8_t state = Q3_STATE_IDLE;
+    uint8_t KeyNum = Key_GetNum();
 
-    uint32_t elapsed = tick_ms - test_start_time;
-
-    /* ---- 蜂鸣器: 500ms后关闭 ---- */
-    if (elapsed > 500 && test_flag == 1)
+    /* ---- Key3 启动 ---- */
+    if (KeyNum == 3 && q3_test_flag == 0)
     {
+        q3_test_flag = 1;
+        q3_state = Q3_GO_PLUS;
+        q3_start_time = tick_ms;
+        q3_set_target(QUESTION3_TARGET_PLUS);
+        buzzer_on();
+    }
+
+    if (q3_test_flag && (tick_ms - q3_start_time > 500U))
         buzzer_off();
-    }
 
-    /* ==== 阶段1: 管道下降 ==== */
-    if (elapsed <= QUESTION3_PHASE1_TIME_MS && state == Q3_STATE_IDLE && test_flag == 1)
+    /* ---- 视觉帧处理 ---- */
+    if (q3_test_flag && uart_maixcam_rx_done)
     {
-        state = Q3_STATE_PHASE1_DOWN;
-        uint32_t pulses = (QUESTION3_PHASE1_PULSES > QUESTION3_MOTOR_MAX_PULSES) ? QUESTION3_MOTOR_MAX_PULSES
-                                                                                 : QUESTION3_PHASE1_PULSES;
-        Emm_V5_Pos_Control(1, 0, 500, 50, pulses, 1, false);
-    }
-    /* ==== 阶段2: 管道上升 ==== */
-    else if (elapsed > QUESTION3_PHASE1_TIME_MS && elapsed <= (QUESTION3_PHASE1_TIME_MS + QUESTION3_PHASE2_TIME_MS) &&
-             state == Q3_STATE_PHASE1_DOWN && test_flag == 1)
-    {
-        state = Q3_STATE_PHASE2_UP;
-        uint32_t pulses = (QUESTION3_PHASE2_PULSES > QUESTION3_MOTOR_MAX_PULSES) ? QUESTION3_MOTOR_MAX_PULSES
-                                                                                 : QUESTION3_PHASE2_PULSES;
-        Emm_V5_Pos_Control(1, 1, 500, 50, pulses, 1, false);
-    }
-    /* ==== 阶段3: 小球平衡控制 ==== */
-    else if (state == Q3_STATE_PHASE2_UP && elapsed > (QUESTION3_PHASE1_TIME_MS + QUESTION3_PHASE2_TIME_MS) &&
-             test_flag == 1)
-    {
-        state = Q3_STATE_BALL_CONTROL;
-    }
-
-    /* ---- 阶段3: 小球平衡控制循环 ---- */
-    if (state == Q3_STATE_BALL_CONTROL)
-    {
+        int16_t ball_pos, ball_vel;
+        float   motor_pos, pos_error;
         static int16_t nudge = 0;
 
-        if (uart_maixcam_rx_done)
+        uint8_t  s1 = uart_rx_buff[2];
+        uint16_t r1 = uart_rx_buff[3] | (uart_rx_buff[4] << 8);
+        uint8_t  s2 = uart_rx_buff[5];
+        uint16_t r2 = uart_rx_buff[6] | (uart_rx_buff[7] << 8);
+
+        ball_pos = (s1 == 0x01) ? -(int16_t)r1 : (int16_t)r1;
+        ball_vel = (s2 == 0x01) ? -(int16_t)r2 : (int16_t)r2;
+        uart_maixcam_rx_done = 0;
+
+        /* PID：球位置 → 电机位置 */
+        motor_pos = pid_calculate(&question3_pid_motor, (float)ball_pos);
+
+        /* 微扰：球静止且偏差过大时叠加推动 */
+        if (abs(ball_pos - (int16_t)question3_pid_motor.setpoint) > 15 &&
+            abs(ball_vel) < QUESTION3_VEL_STILL)
         {
-            uart_maixcam_rx_done = 0;
+            nudge += (ball_pos > (int16_t)question3_pid_motor.setpoint)
+                        ? -QUESTION3_NUDGE_STEP : QUESTION3_NUDGE_STEP;
+            if (nudge > QUESTION3_NUDGE_MAX)  nudge = QUESTION3_NUDGE_MAX;
+            if (nudge < -QUESTION3_NUDGE_MAX) nudge = -QUESTION3_NUDGE_MAX;
+        }
+        else
+        {
+            nudge = 0;
+        }
 
-            uint8_t sign1 = uart_rx_buff[2];
-            uint16_t raw1 = uart_rx_buff[3] | (uart_rx_buff[4] << 8);
-            int16_t ball_error = (sign1 == 0x01) ? -(int16_t)raw1 : (int16_t)raw1;
+        motor_pos += (float)nudge;
+        q3_send_motor(motor_pos);
 
-            uint8_t sign2 = uart_rx_buff[5];
-            uint16_t raw2 = uart_rx_buff[6] | (uart_rx_buff[7] << 8);
-            int16_t ball_vel = (sign2 == 0x01) ? -(int16_t)raw2 : (int16_t)raw2;
+        pos_error = question3_pid_motor.setpoint - (float)ball_pos;
 
-            float motor_pos = pid_calculate(&question3_pid_motor, (float)ball_error);
+        /* +85 到位 → 立即折返去 -85 */
+        if (q3_state == Q3_GO_PLUS && q3_absf(pos_error) <= QUESTION3_POS_TOL)
+        {
+            q3_state = Q3_GO_MINUS;
+            q3_set_target(QUESTION3_TARGET_MINUS);
+        }
+        /* -85 到位 + 低速 + 稳定计时 */
+        else if (q3_state == Q3_GO_MINUS &&
+                 q3_absf(pos_error) <= QUESTION3_POS_TOL &&
+                 q3_absf((float)ball_vel) <= QUESTION3_VEL_TOL)
+        {
+            if (q3_stable_start == 0)
+                q3_stable_start = tick_ms;
 
-            // 微扰逻辑
-            if (abs(ball_error) > 15 && abs(ball_vel) < 20)
+            if (tick_ms - q3_stable_start >= QUESTION3_STABLE_TIME_MS)
             {
-                nudge += (ball_error > 0) ? -5 : 5;
-                if (nudge > 80)
-                    nudge = 80;
-                if (nudge < -80)
-                    nudge = -80;
+                q3_state = Q3_FINISHED;
+                buzzer_on();
             }
-            else if (abs(ball_error) <= 15)
-            {
-                nudge = 0;
-            }
-
-            motor_pos += (float)nudge;
-
-            if (motor_pos > (float)QUESTION3_MOTOR_MAX_PULSES)
-                motor_pos = (float)QUESTION3_MOTOR_MAX_PULSES;
-            if (motor_pos < -(float)QUESTION3_MOTOR_MAX_PULSES)
-                motor_pos = -(float)QUESTION3_MOTOR_MAX_PULSES;
-
-            if (motor_pos >= 0)
-                Emm_V5_Pos_Control(1, 0, 500, 50, (uint32_t)motor_pos, 1, false);
-            else
-                Emm_V5_Pos_Control(1, 1, 500, 50, (uint32_t)(-motor_pos), 1, false);
+        }
+        else
+        {
+            q3_stable_start = 0;
         }
     }
 
-    /* ---- 按键处理 ---- */
-    uint8_t KeyNum = Key_GetNum();
     if (KeyNum == 4)
-    {
         NextMode = 1;
-    }
-    if (KeyNum == 3)
-    {
-        test_flag = 1;
-        test_start_time = tick_ms;
-        state = Q3_STATE_IDLE;
-        pid_reset(&question3_pid_motor);
-        pid_set_setpoint(&question3_pid_motor, 0.0f);
-        buzzer_on();
-    }
 }
 
 void Mode3_Exit(void)
 {
+    q3_test_flag = 0;
+    q3_state = Q3_IDLE;
+    pid_reset(&question3_pid_motor);
+    Emm_V5_Stop_Now(1, false);
     Emm_V5_Origin_Trigger_Return(1, 0, false);
 }
 
@@ -499,10 +522,10 @@ void Mode5_Loop(void)
         motor_pos += (float)nudge;
 
         // 限幅保护（电机绝对位置）
-        if (motor_pos > 330.0f)
-            motor_pos = 330.0f;
-        if (motor_pos < -330.0f)
-            motor_pos = -330.0f;
+        if (motor_pos > 280.0f)
+            motor_pos = 280.0f;
+        if (motor_pos < -280.0f)
+            motor_pos = -280.0f;
 
         // // ---- 调试输出 ----
         // sprintf((char *)uart_tx_buff, "e:%d v:%d m:%.0f n:%d\r\n", ball_error, ball_vel, motor_pos, nudge);
@@ -688,10 +711,10 @@ void Mode6_Loop(void)
         motor_pos += (float)nudge;
 
         // 限幅保护（电机绝对位置）
-        if (motor_pos > 330.0f)
-            motor_pos = 330.0f;
-        if (motor_pos < -330.0f)
-            motor_pos = -330.0f;
+        if (motor_pos > 280.0f)
+            motor_pos = 280.0f;
+        if (motor_pos < -280.0f)
+            motor_pos = -280.0f;
 
         // // ---- 调试输出 ----
         // sprintf((char *)uart_tx_buff, "e:%d v:%d m:%.0f n:%d\r\n", ball_error, ball_vel, motor_pos, nudge);
@@ -701,11 +724,11 @@ void Mode6_Loop(void)
         // ---- 绝对位置模式驱动电机 ----
         if (motor_pos >= 0)
         {
-            Emm_V5_Pos_Control(1, 0, 500, 50, (uint32_t)motor_pos, 1, false);
+            Emm_V5_Pos_Control(1, 0, 500, 200, (uint32_t)motor_pos, 1, false);
         }
         else
         {
-            Emm_V5_Pos_Control(1, 1, 500, 50, (uint32_t)(-motor_pos), 1, false);
+            Emm_V5_Pos_Control(1, 1, 500, 200, (uint32_t)(-motor_pos), 1, false);
         }
 
         /* ---- VOFA+ 实时数据发送 (5通道 JustFloat) ---- */
