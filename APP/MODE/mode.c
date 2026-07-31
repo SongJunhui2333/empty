@@ -258,11 +258,11 @@ void Mode4_Exit(void)
 /* ---------------------------------------------------------------- */
 
 pid_t question5_pid_motor;                          // 球杆系统PID控制器
-static float QUESTION5_MOTOR_KP = 2.5f;             // 比例系数：球偏差 → 电机脉冲
-static float QUESTION5_MOTOR_KI = 0.01f;             // 积分系数：含饱和系统禁用
-static float QUESTION5_MOTOR_KD = 10.0f;             // 微分系数：增强阻尼抑制振荡
-static float QUESTION5_MOTOR_OUTPUT_MAX = 330.0f;   // 电机正方向最大脉冲
-static float QUESTION5_MOTOR_OUTPUT_MIN = -330.0f;  // 电机负方向最大脉冲
+static float QUESTION5_MOTOR_KP = 2.8f;             // 比例系数：球偏差 → 电机脉冲
+static float QUESTION5_MOTOR_KI = 0.01f;            // 积分系数：缓慢消除稳态误差（抗饱和已内置）
+static float QUESTION5_MOTOR_KD = 15.0f;            // 微分系数：利用球速提供阻尼
+static float QUESTION5_MOTOR_OUTPUT_MAX = 280.0f;   // 电机正方向最大脉冲
+static float QUESTION5_MOTOR_OUTPUT_MIN = -280.0f;  // 电机负方向最大脉冲
 
 void Mode5_Init(void)
 {
@@ -277,6 +277,8 @@ void Mode5_Init(void)
 
 void Mode5_Loop(void)
 {
+    static int16_t nudge = 0; // 微扰累积量，小球静止且偏差过大时逐步累加
+
     if (uart_maixcam_rx_done)
     {
         uart_maixcam_rx_done = 0;
@@ -292,16 +294,35 @@ void Mode5_Loop(void)
         int16_t  ball_vel = (sign2 == 0x01) ? -(int16_t)raw2 : (int16_t)raw2;
 
         // ---- PID 计算电机目标位置 ----
-        // setpoint=0(小球应在管中心), feedback=ball_error(当前位置偏差)
-        // PID 输出正 → 电机正转使管倾斜 → 小球反向滚动减小偏差
         float motor_pos = pid_calculate(&question5_pid_motor, (float)ball_error);
 
-        // 限幅保护（电机绝对位置 ±360）
-        if (motor_pos > 360.0f)  motor_pos = 360.0f;
-        if (motor_pos < -360.0f) motor_pos = -360.0f;
+        // ---- 微扰逻辑：小球静止且偏差 >15 时，逐步叠加微扰推动小球 ----
+        #define QUESTION5_VEL_STILL   20   // 判定小球静止的速度阈值
+        #define QUESTION5_NUDGE_STEP  5    // 每次微扰增量（脉冲）
+        #define QUESTION5_NUDGE_MAX   80   // 微扰累积上限
+
+        if (abs(ball_error) > 15 && abs(ball_vel) < QUESTION5_VEL_STILL)
+        {
+            // 小球卡住了：按偏差反方向叠加微扰
+            nudge += (ball_error > 0) ? -QUESTION5_NUDGE_STEP : QUESTION5_NUDGE_STEP;
+
+            if (nudge > QUESTION5_NUDGE_MAX)   nudge = QUESTION5_NUDGE_MAX;
+            if (nudge < -QUESTION5_NUDGE_MAX)  nudge = -QUESTION5_NUDGE_MAX;
+        }
+        else if (abs(ball_error) <= 15)
+        {
+            nudge = 0; // 偏差达标，清零微扰
+        }
+        // else: 球在运动中，保持当前微扰不变，让其继续作用
+
+        motor_pos += (float)nudge;
+
+        // 限幅保护（电机绝对位置）
+        if (motor_pos > 330.0f)  motor_pos = 330.0f;
+        if (motor_pos < -330.0f) motor_pos = -330.0f;
 
         // ---- 调试输出 ----
-        sprintf((char *)uart_tx_buff, "e:%d v:%d m:%.0f\r\n", ball_error, ball_vel, motor_pos);
+        sprintf((char *)uart_tx_buff, "e:%d v:%d m:%.0f n:%d\r\n", ball_error, ball_vel, motor_pos, nudge);
         UART_print_string(DEBUG_INST, (char *)uart_tx_buff);
         memset((char *)uart_tx_buff, 0, sizeof(uart_tx_buff));
 

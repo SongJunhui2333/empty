@@ -86,7 +86,7 @@ int main(void)
         // Emm_V5_Pos_Control(1, 1, 100, 0, 120, 1, false);
 
         // delay_ms(50); // 延时500毫秒
-
+        // UART_print_string(DEBUG_INST, "char *str");
 
         if (CurrentMode == NextMode) // 如果当前模式与下一个模式相同，则继续执行当前模式
         {

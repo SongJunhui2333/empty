@@ -48,6 +48,7 @@ void Mode4_Loop(void);
 void Mode4_Exit(void);
 
 /* --------------------------- 模式5：第五问代码 -------------------------- */
+extern pid_t question5_pid_motor; // 球杆系统PID控制器
 void Mode5_Init(void);
 void Mode5_Loop(void);
 void Mode5_Exit(void);
