@@ -48,11 +48,13 @@ void UART_send_data(UART_Regs *uart, const uint8_t *buff, uint16_t length)
 /**
  * @brief   MAIXCAM UART中断服务函数
  *
- * 使用状态机接收固定7字节帧数据，帧格式：
+ * 使用状态机接收固定10字节帧数据，帧格式：
  *   字节0-1: 帧头 0xFF 0xFE
- *   字节2:   正负标志 (0x00=正, 0x01=负)
- *   字节3-4: 数据 (低字节在前, 高字节在后)
- *   字节5-6: 帧尾 0xFE 0xFF
+ *   字节2:   第一个数据的正负标志 (0x00=正, 0x01=负)
+ *   字节3-4: 第一个数据 (低字节在前, 高字节在后)
+ *   字节5:   第二个数据的正负标志 (0x00=正, 0x01=负)
+ *   字节6-7: 第二个数据 (低字节在前, 高字节在后)
+ *   字节8-9: 帧尾 0xFE 0xFF
  *
  * @param   void
  * @return  void
@@ -124,40 +126,58 @@ void UART_MAIXCAM_INST_IRQHandler(void)
             RxState = 4;
             break;
 
-        /* ---- 状态4: 接收数据高字节 ---- */
+        /* ---- 状态4: 接收第一个数据高字节 ---- */
         case 4:
             uart_rx_buff[pRxIndex++] = RxData;
             RxState = 5;
             break;
 
-        /* ---- 状态5: 等待帧尾第一个字节 0xFE ---- */
+        /* ---- 状态5: 接收第二个数据的正负标志 ---- */
         case 5:
+            uart_rx_buff[pRxIndex++] = RxData;
+            RxState = 6;
+            break;
+
+        /* ---- 状态6: 接收第二个数据低字节 ---- */
+        case 6:
+            uart_rx_buff[pRxIndex++] = RxData;
+            RxState = 7;
+            break;
+
+        /* ---- 状态7: 接收第二个数据高字节 ---- */
+        case 7:
+            uart_rx_buff[pRxIndex++] = RxData;
+            RxState = 8;
+            break;
+
+        /* ---- 状态8: 等待帧尾第一个字节 0xFE ---- */
+        case 8:
             if (RxData == 0xFE)
             {
                 uart_rx_buff[pRxIndex++] = RxData;
-                RxState = 6;
+                RxState = 9;
             }
             else
             {
                 pRxIndex = 0;
-                RxState = 0;
+                RxState  = 0;
             }
             break;
 
-        /* ---- 状态6: 等待帧尾第二个字节 0xFF ---- */
-        case 6:
+        /* ---- 状态9: 等待帧尾第二个字节 0xFF ---- */
+        case 9:
             if (RxData == 0xFF)
             {
                 uart_rx_buff[pRxIndex++] = RxData;
-                uart_rx_flag = 1;         // 完整帧接收完成
-                uart_maixcam_rx_done = 1; // MAIXCAM帧接收完成
+                uart_rx_flag          = 1;  // 完整帧接收完成
+                uart_maixcam_rx_done  = 1;  // MAIXCAM帧接收完成
                 pRxIndex = 0;
-                RxState = 0;
+                RxState  = 0;
             }
             else
             {
                 pRxIndex = 0;
-                RxState = 0;
+                RxState  = 0;
             }
             break;
 

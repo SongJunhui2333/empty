@@ -3,6 +3,7 @@
 
 #include "Emm_V5.h"
 #include "ZDT_MOTOR_Control.h"
+#include "buzzer.h"
 #include "clock.h"
 #include "key.h"
 #include "motor.h"
@@ -39,7 +40,9 @@ extern pid_t question4_pid_heading;            // 模式4的PID控制器实例�
 extern uint8_t question4_flag;                 // 模式4的标志位，0表示未开始，1表示已开始
 extern const short question4_trace_weights[8]; // 模式4的循迹权重数组
 extern uint32_t question4_start_time;          // 记录模式4开始的时间
-#define QUESTION4_MOTOR_MAX_SPEED 30           // 模式4的电机最大速度
+#define QUESTION4_MOTOR_MAX_SPEED 60           // 模式4的电机最大速度（PID目标值）
+#define QUESTION4_RAMP_TIME_MS 8000            // 模式4的缓启动时间（毫秒），可自行修改
+extern uint16_t question4_current_speed;       // 模式4当前的电机速度目标值（缓启动过程中实时变化）
 void Mode4_Init(void);
 void Mode4_Loop(void);
 void Mode4_Exit(void);

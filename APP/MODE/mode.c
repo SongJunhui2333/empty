@@ -114,28 +114,39 @@ void Mode2_Exit(void)
 /* ---------------------------------------------------------------- */
 static uint32_t question3_start_time = 0; // 记录模式3开始的时间
 
-#define QUESTION3_MOTOR_RiseTime 900  // 模式3的电机上升时间
-#define QUESTION3_MOTOR_DiseCLK 120   // 模式3的电机上升脉冲数
-#define QUESTION3_MOTOR_FallTime 1000 // 模式3的电机下降时间
-#define QUESTION3_MOTOR_FallCLK 120   // 模式3的电机下降脉冲数
+#define QUESTION3_MOTOR_RiseTime 300  // 模式3的电机上升时间
+#define QUESTION3_MOTOR_DiseCLK 150   // 模式3的电机上升脉冲数
+#define QUESTION3_MOTOR_FallTime 2000 // 模式3的电机下降时间
+#define QUESTION3_MOTOR_FallCLK 150   // 模式3的电机下降脉冲数
 
 void Mode3_Init(void)
 {
     OLED_Clear();
     // 在这里添加模式3的初始化代码
     OLED_ShowString(0, 0, (uint8_t *)"QUESTION 3", 16);
+    OLED_ShowString(0, 3, (uint8_t *)"Press Key3 to Start", 8);
+    OLED_ShowString(0, 5, (uint8_t *)"Press Key4 to Exit", 8);
+    OLED_ShowString(0, 7, (uint8_t *)"Press Key5 to Adjust", 8);
+    Emm_V5_Origin_Trigger_Return(1, 0, false);
 
     question3_start_time = tick_ms; // 记录模式3开始的时间
 }
 
 void Mode3_Loop(void)
 {
+    static uint16_t question3_test_time = 0; // 记录模式3的测试时间
+    static uint8_t question3_test_flag = 0;  // 模式3的测试标志位，0表示未开始，1表示已开始
     // 在这里添加模式3的循环代码
-    uint16_t elapsed_time = (tick_ms - question3_start_time); // 计算模式3运行的时间（毫秒）
+    uint16_t elapsed_time = (tick_ms - question3_test_time); // 计算模式3运行的时间（毫秒）
+
+    if (elapsed_time > 500 && question3_test_flag == 1) // 500毫秒后关闭蜂鸣器
+    {
+        buzzer_off();
+    }
 
     static uint8_t State = 0; // 电机状态，0表示未开始，1表示上升，2表示下降
 
-    if (elapsed_time <= QUESTION3_MOTOR_RiseTime && State == 0)
+    if (elapsed_time <= QUESTION3_MOTOR_RiseTime && State == 0 && question3_test_flag == 1)
     {
         State = 1; // 设置电机状态为下降
         // 在电机上升时间内，设置电机上升位置
@@ -143,24 +154,37 @@ void Mode3_Loop(void)
                               false);
     }
     else if (elapsed_time >= QUESTION3_MOTOR_RiseTime &&
-             elapsed_time <= (QUESTION3_MOTOR_RiseTime + QUESTION3_MOTOR_FallTime) && State == 1)
+             elapsed_time <= (QUESTION3_MOTOR_RiseTime + QUESTION3_MOTOR_FallTime) && State == 1 &&
+             question3_test_flag == 1)
     {
         State = 2; // 设置电机状态为上升
         // 在电机下降时间内，设置电机下降位置
         ZDT_MOTOR_Pos_Control(1, ZDT_MOTOR_DOWN, ZDT_MOTOR_Default_Vel, ZDT_MOTOR_Default_Acc, QUESTION3_MOTOR_FallCLK,
                               false);
     }
-    else if (State == 2 && elapsed_time > (QUESTION3_MOTOR_RiseTime + QUESTION3_MOTOR_FallTime))
+    else if (State == 2 && elapsed_time > (QUESTION3_MOTOR_RiseTime + QUESTION3_MOTOR_FallTime) &&
+             question3_test_flag == 1)
     {
-        State = 0; // 重置电机状态为未开始
+        State = 0;               // 重置电机状态为未开始
+        question3_test_flag = 0; // 重置模式3的测试标志位为未开始
         // 电机回0
-        ZDT_MOTOR_Pos_Control(1, ZDT_MOTOR_DOWN, ZDT_MOTOR_Default_Vel, ZDT_MOTOR_Default_Acc, 10, false);
+        Emm_V5_Origin_Trigger_Return(1, 0, false);
     }
 
     uint8_t KeyNum = Key_GetNum();
     if (KeyNum == 4) // 按键4被按下
     {
         NextMode = 1; // 切换回模式1，选择问题模式
+    }
+    if (KeyNum == 5)
+    {
+        NextMode = 8; // 切换到模式8，调参入口模式
+    }
+    if (KeyNum == 3) // 按键3被按下
+    {
+        question3_test_flag = 1;       // 设置模式3的测试标志位为已开始
+        question3_test_time = tick_ms; // 记录模式3的测试开始时间
+        buzzer_on();                   // 打开蜂鸣器
     }
 }
 void Mode3_Exit(void)
@@ -176,11 +200,12 @@ void Mode3_Exit(void)
 uint32_t question4_start_time = 0;                                     // 记录模式4开始的时间
 uint8_t question4_flag = 0;                                            // 模式4的标志位，0表示未开始，1表示已开始
 const short question4_trace_weights[8] = {-8, -6, -2, -1, 1, 2, 6, 8}; // 模式4的循迹权重数组
+uint16_t question4_current_speed = 0;                                  // 模式4当前的电机速度目标值
 
 pid_t question4_pid_heading;                          // 模式4的PID控制器实例，用于调整小车的转向
 static float QUESTION4_HEADING_KP = (4.5f * 0.6f);    // 模式4的PID控制器比例系数
-static float QUESTION4_HEADING_KI = (0.035f);         // 模式4的PID控制器积分系数
-static float QUESTION4_HEADING_KD = (18.0f * 0.3f);   // 模式4的PID控制器微分系数
+static float QUESTION4_HEADING_KI = (0.0f);           // 模式4的PID控制器积分系数
+static float QUESTION4_HEADING_KD = (18.0f);          // 模式4的PID控制器微分系数
 static float QUESTION4_HEADING_OUTPUT_MAX = (40.0f);  // 模式4的PID控制器输出最大值
 static float QUESTION4_HEADING_OUTPUT_MIN = (-40.0f); // 模式4的PID控制器输出最小值
 
@@ -191,6 +216,7 @@ void Mode4_Init(void)
     OLED_ShowString(0, 0, (uint8_t *)"Question 4", 16);
 
     question4_start_time = tick_ms;    // 记录模式4开始的时间
+    question4_current_speed = 0;       // 重置缓启动速度
     pid_reset(&question4_pid_heading); // 重置模式4的PID控制器
     // 初始化模式4的PID控制器
     pid_init(&question4_pid_heading, PID_POSITION, QUESTION4_HEADING_KP, QUESTION4_HEADING_KI, QUESTION4_HEADING_KD,
@@ -201,98 +227,104 @@ void Mode4_Init(void)
 
     motor_set_direction(1, 1); // 设置左轮电机方向为正转
     motor_set_direction(2, 1); // 设置右轮电机方向为正转
+
+    buzzer_on();
 }
 
 void Mode4_Loop(void)
 {
     // 在这里添加模式4的循环代码
-    uint32_t time = (float)(tick_ms - question4_start_time);
+    // uint32_t time = (float)(tick_ms - question4_start_time);
+    if (tick_ms - question4_start_time > 500) // 500毫秒后关闭蜂鸣器
+    {
+        buzzer_off();
+    }
 }
 
 void Mode4_Exit(void)
 {
     // 在这里添加模式4的退出代码
+    question4_flag = 0;                // 重置模式4的标志位
+    pid_set_setpoint(&pid_motor_l, 0); // 停止左轮电机
+    pid_set_setpoint(&pid_motor_r, 0); // 停止右轮电机
+    delay_ms(300);                     // 等待电机停止
+    motor_set_direction(1, 0);         // 设置左轮电机方向为停止
+    motor_set_direction(2, 0);         // 设置右轮电机方向为停止
+    pid_reset(&question4_pid_heading); // 重置模式4的PID控制器
 }
 
 /* ---------------------------------------------------------------- */
 /*                             模式5：第五问代码                            */
 /* ---------------------------------------------------------------- */
 
-pid_t question5_pid_motor;                         // 模式5的PID控制器实例，用于调节电机参数
-static float QUESTION5_MOTOR_KP = 1.0f;            // 模式5的PID控制器比例系数
-static float QUESTION5_MOTOR_KI = 0.0f;            // 模式5的PID控制器积分系数
-static float QUESTION5_MOTOR_KD = 0.0f;            // 模式5的PID控制器微分系数
-static float QUESTION5_MOTOR_OUTPUT_MAX = 360.0f;  // 模式5的PID控制器输出最大值
-static float QUESTION5_MOTOR_OUTPUT_MIN = -360.0f; // 模式5的PID控制器输出最小值
+pid_t question5_pid_motor;                          // 球杆系统PID控制器
+static float QUESTION5_MOTOR_KP = 2.5f;             // 比例系数：球偏差 → 电机脉冲
+static float QUESTION5_MOTOR_KI = 0.01f;             // 积分系数：含饱和系统禁用
+static float QUESTION5_MOTOR_KD = 10.0f;             // 微分系数：增强阻尼抑制振荡
+static float QUESTION5_MOTOR_OUTPUT_MAX = 330.0f;   // 电机正方向最大脉冲
+static float QUESTION5_MOTOR_OUTPUT_MIN = -330.0f;  // 电机负方向最大脉冲
 
 void Mode5_Init(void)
 {
-    // 在这里添加模式5的初始化代码
     OLED_Clear();
     OLED_ShowString(0, 0, (uint8_t *)"Question 5", 16);
 
-    pid_init(&question5_pid_motor, PID_POSITION, QUESTION5_MOTOR_KP, QUESTION5_MOTOR_KI, QUESTION5_MOTOR_KD,
-             QUESTION5_MOTOR_OUTPUT_MAX, QUESTION5_MOTOR_OUTPUT_MIN); // 初始化模式5的PID控制器
-    pid_set_setpoint(&question5_pid_motor, 0);                        // 设置模式5的PID控制器目标值为0
+    pid_init(&question5_pid_motor, PID_POSITION,
+             QUESTION5_MOTOR_KP, QUESTION5_MOTOR_KI, QUESTION5_MOTOR_KD,
+             QUESTION5_MOTOR_OUTPUT_MAX, QUESTION5_MOTOR_OUTPUT_MIN);
+    pid_set_setpoint(&question5_pid_motor, 0.0f); // 目标：小球在管中心（偏差=0）
 }
 
 void Mode5_Loop(void)
 {
-    // 在这里添加模式5的循环代码
-    // 轮询检查是否有新帧到达
     if (uart_maixcam_rx_done)
     {
+        uart_maixcam_rx_done = 0;
 
-        // uart_rx_buff[0..1]: 帧头 0xFF 0xFE
-        uint8_t sign = uart_rx_buff[2];           // 0x00=正, 0x01=负
-        uint16_t data = uart_rx_buff[3]           // 低字节
-                        | (uart_rx_buff[4] << 8); // 高字节
-        // uart_rx_buff[5..6]: 帧尾 0xFE 0xFF
+        // ---- 解析第一个数据：小球位置偏差 ----
+        uint8_t  sign1 = uart_rx_buff[2];
+        uint16_t raw1  = uart_rx_buff[3] | (uart_rx_buff[4] << 8);
+        int16_t  ball_error = (sign1 == 0x01) ? -(int16_t)raw1 : (int16_t)raw1;
 
-        // 处理数据...
+        // ---- 解析第二个数据：小球当前速度 ----
+        uint8_t  sign2 = uart_rx_buff[5];
+        uint16_t raw2  = uart_rx_buff[6] | (uart_rx_buff[7] << 8);
+        int16_t  ball_vel = (sign2 == 0x01) ? -(int16_t)raw2 : (int16_t)raw2;
 
-        int pross_data = (sign == 0) ? data : -data; // 根据符号位处理数据
-        sprintf((char *)uart_tx_buff, "processed:%d\r\n", pross_data);
+        // ---- PID 计算电机目标位置 ----
+        // setpoint=0(小球应在管中心), feedback=ball_error(当前位置偏差)
+        // PID 输出正 → 电机正转使管倾斜 → 小球反向滚动减小偏差
+        float motor_pos = pid_calculate(&question5_pid_motor, (float)ball_error);
+
+        // 限幅保护（电机绝对位置 ±360）
+        if (motor_pos > 360.0f)  motor_pos = 360.0f;
+        if (motor_pos < -360.0f) motor_pos = -360.0f;
+
+        // ---- 调试输出 ----
+        sprintf((char *)uart_tx_buff, "e:%d v:%d m:%.0f\r\n", ball_error, ball_vel, motor_pos);
         UART_print_string(DEBUG_INST, (char *)uart_tx_buff);
-        memset((char *)uart_tx_buff, 0, sizeof(uart_tx_buff)); // 清空发送缓冲区
+        memset((char *)uart_tx_buff, 0, sizeof(uart_tx_buff));
 
-        float steering = pid_calculate(&question5_pid_motor, (float)pross_data); // 使用PID计算转向调整值
-
-        sprintf((char *)uart_tx_buff, "steering:%.2f\r\n", steering);
-        UART_print_string(DEBUG_INST, (char *)uart_tx_buff);
-        memset((char *)uart_tx_buff, 0, sizeof(uart_tx_buff)); // 清空发送缓冲区
-
-        if (steering > 0)
+        // ---- 绝对位置模式驱动电机 ----
+        if (motor_pos >= 0)
         {
-            if (steering > 360)
-            {
-                steering = 360; // 限制最大值
-            }
-            Emm_V5_Pos_Control(1, 0, 10, 10, steering, 1, false);
+            Emm_V5_Pos_Control(1, 0, 500, 50, (uint32_t)motor_pos, 1, false);
         }
         else
         {
-
-            if (steering < -360)
-            {
-                steering = -360; // 限制最小值
-            }
-            Emm_V5_Pos_Control(1, 1, 10, 10, -steering, 1, false);
+            Emm_V5_Pos_Control(1, 1, 500, 50, (uint32_t)(-motor_pos), 1, false);
         }
-
-        uart_maixcam_rx_done = 0; // 清除标志，准备接收下一帧
     }
 
     uint8_t KeyNum = Key_GetNum();
-    if (KeyNum == 4) // 按键4被按下
+    if (KeyNum == 4)
     {
-        NextMode = 1; // 切换回模式1，选择问题模式
+        NextMode = 1;
     }
 }
 
 void Mode5_Exit(void)
 {
-    // 在这里添加模式5的退出代码
     Emm_V5_Origin_Trigger_Return(1, 0, false);
 }
 

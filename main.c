@@ -43,7 +43,7 @@ int main(void)
     // 初始化OLED显示屏
     OLED_Init();
     // 初始化陀螺仪
-    WIT_Init();
+    // WIT_Init();
 
     motor_init(1); // 初始化电机1
     motor_init(2); // 初始化电机2
@@ -85,7 +85,8 @@ int main(void)
         // delay_ms(1000); // 延时1秒
         // Emm_V5_Pos_Control(1, 1, 100, 0, 120, 1, false);
 
-        // delay_ms(1000); // 延时1秒
+        // delay_ms(50); // 延时500毫秒
+
 
         if (CurrentMode == NextMode) // 如果当前模式与下一个模式相同，则继续执行当前模式
         {
