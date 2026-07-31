@@ -1,4 +1,5 @@
 #include "gray_trace.h"
+// #include "../Drivers/VOFA/vofa.h"
 
 /**
  * @brief 计算灰度传感器中检测到的黑线数量。
@@ -44,11 +45,44 @@ void gray_trace(uint8_t *sensorValues, const float *weights, pid_t *pid_controll
 
     float calcu = (float)weighted_sum / (float)gray_sum; // 计算偏差值
 
+    // /* ---- Mode 5 一阶低通滤波: 平滑灰度偏差值, 减少转向抖动 ---- */
+    // {
+    //     static float   last_filtered_calcu = 0.0f;
+    //     static uint8_t was_mode5           = 0;
+    //
+    //     if (question5_flag == 1)
+    //     {
+    //         /* 刚进入 Mode 5 时用当前偏差值初始化滤波器, 避免从旧值跳变 */
+    //         if (!was_mode5)
+    //         {
+    //             last_filtered_calcu = calcu;
+    //             was_mode5           = 1;
+    //         }
+    //
+    //         float a = 0.15f; /* 滤波系数: 0~1, 越小越平滑 (0.3 ≈ 60ms 时间常数) */
+    //         calcu = a * calcu + (1.0f - a) * last_filtered_calcu;
+    //         last_filtered_calcu = calcu;
+    //     }
+    //     else
+    //     {
+    //         was_mode5 = 0; /* 退出 Mode 5, 下次进入重新初始化 */
+    //     }
+    // }
+
     float steering = pid_calculate(pid_controller, calcu); // 使用PID计算转向调整值
 
-    sprintf((char *)uart_tx_buff, "calc: %.2f, steering: %.2f\r\n", calcu, steering);
-    UART_print_string(DEBUG_INST, (char *)uart_tx_buff);
-    memset((void *)uart_tx_buff, 0, 128);
+    // /* ---- VOFA+ 实时数据发送: Mode 5 小车转向PID (5通道 JustFloat) ---- */
+    // /* ch0:目标值  ch1:灰度偏差  ch2:steering  ch3:PID误差  ch4:黑线数 */
+    // if (question5_flag == 1)
+    // {
+    //     float vofa_data[5];
+    //     vofa_data[0] = pid_controller->setpoint;
+    //     vofa_data[1] = calcu;
+    //     vofa_data[2] = steering;
+    //     vofa_data[3] = pid_controller->error;
+    //     vofa_data[4] = (float)gray_sum;
+    //     vofa_send_frame(vofa_data, 5);
+    // }
 
     pid_set_setpoint(&pid_motor_l, motor_l_base_speed - steering);
     pid_set_setpoint(&pid_motor_r, motor_r_base_speed + steering);

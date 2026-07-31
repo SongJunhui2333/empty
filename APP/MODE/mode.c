@@ -1,4 +1,5 @@
 #include "mode.h"
+#include "../Drivers/VOFA/vofa.h"
 #include <stdlib.h>
 
 uint8_t CurrentMode = 0; // 当前模式编号，0表示未选择模式
@@ -124,10 +125,10 @@ void Mode2_Exit(void)
 /* ---------------------------------------------------------------- */
 
 /* ---------- 可调参数 ---------- */
-#define QUESTION3_PHASE1_TIME_MS 800  // 阶段1持续时间（毫秒）
-#define QUESTION3_PHASE1_PULSES  110   // 阶段1管道下降脉冲数
+#define QUESTION3_PHASE1_TIME_MS 800   // 阶段1持续时间（毫秒）
+#define QUESTION3_PHASE1_PULSES 110    // 阶段1管道下降脉冲数
 #define QUESTION3_PHASE2_TIME_MS 1000  // 阶段2持续时间（毫秒）
-#define QUESTION3_PHASE2_PULSES  110   // 阶段2管道上升脉冲数
+#define QUESTION3_PHASE2_PULSES 110    // 阶段2管道上升脉冲数
 #define QUESTION3_MOTOR_MAX_PULSES 290 // 电机正反转最大脉冲限幅
 
 /* ---------- 球控PID ---------- */
@@ -139,10 +140,10 @@ static float QUESTION3_MOTOR_OUTPUT_MAX = 290.0f;
 static float QUESTION3_MOTOR_OUTPUT_MIN = -290.0f;
 
 /* ---------- 状态定义 ---------- */
-#define Q3_STATE_IDLE         0  // 等待按键
-#define Q3_STATE_PHASE1_DOWN  1  // 管道下降
-#define Q3_STATE_PHASE2_UP    2  // 管道上升
-#define Q3_STATE_BALL_CONTROL 3  // 小球平衡控制
+#define Q3_STATE_IDLE 0         // 等待按键
+#define Q3_STATE_PHASE1_DOWN 1  // 管道下降
+#define Q3_STATE_PHASE2_UP 2    // 管道上升
+#define Q3_STATE_BALL_CONTROL 3 // 小球平衡控制
 
 void Mode3_Init(void)
 {
@@ -152,8 +153,7 @@ void Mode3_Init(void)
     OLED_ShowString(0, 5, (uint8_t *)"Key4: Exit", 8);
 
     /* ---- 初始化 PID ---- */
-    pid_init(&question3_pid_motor, PID_POSITION,
-             QUESTION3_MOTOR_KP, QUESTION3_MOTOR_KI, QUESTION3_MOTOR_KD,
+    pid_init(&question3_pid_motor, PID_POSITION, QUESTION3_MOTOR_KP, QUESTION3_MOTOR_KI, QUESTION3_MOTOR_KD,
              QUESTION3_MOTOR_OUTPUT_MAX, QUESTION3_MOTOR_OUTPUT_MIN);
     pid_set_setpoint(&question3_pid_motor, 0.0f);
 
@@ -163,35 +163,37 @@ void Mode3_Init(void)
 void Mode3_Loop(void)
 {
     static uint32_t test_start_time = 0;
-    static uint8_t  test_flag  = 0;
-    static uint8_t  state      = Q3_STATE_IDLE;
+    static uint8_t test_flag = 0;
+    static uint8_t state = Q3_STATE_IDLE;
 
     uint32_t elapsed = tick_ms - test_start_time;
 
     /* ---- 蜂鸣器: 500ms后关闭 ---- */
-    if (elapsed > 500 && test_flag == 1) { buzzer_off(); }
+    if (elapsed > 500 && test_flag == 1)
+    {
+        buzzer_off();
+    }
 
     /* ==== 阶段1: 管道下降 ==== */
     if (elapsed <= QUESTION3_PHASE1_TIME_MS && state == Q3_STATE_IDLE && test_flag == 1)
     {
         state = Q3_STATE_PHASE1_DOWN;
-        uint32_t pulses = (QUESTION3_PHASE1_PULSES > QUESTION3_MOTOR_MAX_PULSES)
-                            ? QUESTION3_MOTOR_MAX_PULSES : QUESTION3_PHASE1_PULSES;
+        uint32_t pulses = (QUESTION3_PHASE1_PULSES > QUESTION3_MOTOR_MAX_PULSES) ? QUESTION3_MOTOR_MAX_PULSES
+                                                                                 : QUESTION3_PHASE1_PULSES;
         Emm_V5_Pos_Control(1, 0, 500, 50, pulses, 1, false);
     }
     /* ==== 阶段2: 管道上升 ==== */
-    else if (elapsed > QUESTION3_PHASE1_TIME_MS &&
-             elapsed <= (QUESTION3_PHASE1_TIME_MS + QUESTION3_PHASE2_TIME_MS) &&
+    else if (elapsed > QUESTION3_PHASE1_TIME_MS && elapsed <= (QUESTION3_PHASE1_TIME_MS + QUESTION3_PHASE2_TIME_MS) &&
              state == Q3_STATE_PHASE1_DOWN && test_flag == 1)
     {
         state = Q3_STATE_PHASE2_UP;
-        uint32_t pulses = (QUESTION3_PHASE2_PULSES > QUESTION3_MOTOR_MAX_PULSES)
-                            ? QUESTION3_MOTOR_MAX_PULSES : QUESTION3_PHASE2_PULSES;
+        uint32_t pulses = (QUESTION3_PHASE2_PULSES > QUESTION3_MOTOR_MAX_PULSES) ? QUESTION3_MOTOR_MAX_PULSES
+                                                                                 : QUESTION3_PHASE2_PULSES;
         Emm_V5_Pos_Control(1, 1, 500, 50, pulses, 1, false);
     }
     /* ==== 阶段3: 小球平衡控制 ==== */
-    else if (state == Q3_STATE_PHASE2_UP &&
-             elapsed > (QUESTION3_PHASE1_TIME_MS + QUESTION3_PHASE2_TIME_MS) && test_flag == 1)
+    else if (state == Q3_STATE_PHASE2_UP && elapsed > (QUESTION3_PHASE1_TIME_MS + QUESTION3_PHASE2_TIME_MS) &&
+             test_flag == 1)
     {
         state = Q3_STATE_BALL_CONTROL;
     }
@@ -205,13 +207,13 @@ void Mode3_Loop(void)
         {
             uart_maixcam_rx_done = 0;
 
-            uint8_t  sign1 = uart_rx_buff[2];
-            uint16_t raw1  = uart_rx_buff[3] | (uart_rx_buff[4] << 8);
-            int16_t  ball_error = (sign1 == 0x01) ? -(int16_t)raw1 : (int16_t)raw1;
+            uint8_t sign1 = uart_rx_buff[2];
+            uint16_t raw1 = uart_rx_buff[3] | (uart_rx_buff[4] << 8);
+            int16_t ball_error = (sign1 == 0x01) ? -(int16_t)raw1 : (int16_t)raw1;
 
-            uint8_t  sign2 = uart_rx_buff[5];
-            uint16_t raw2  = uart_rx_buff[6] | (uart_rx_buff[7] << 8);
-            int16_t  ball_vel = (sign2 == 0x01) ? -(int16_t)raw2 : (int16_t)raw2;
+            uint8_t sign2 = uart_rx_buff[5];
+            uint16_t raw2 = uart_rx_buff[6] | (uart_rx_buff[7] << 8);
+            int16_t ball_vel = (sign2 == 0x01) ? -(int16_t)raw2 : (int16_t)raw2;
 
             float motor_pos = pid_calculate(&question3_pid_motor, (float)ball_error);
 
@@ -219,8 +221,10 @@ void Mode3_Loop(void)
             if (abs(ball_error) > 15 && abs(ball_vel) < 20)
             {
                 nudge += (ball_error > 0) ? -5 : 5;
-                if (nudge > 80)  nudge = 80;
-                if (nudge < -80) nudge = -80;
+                if (nudge > 80)
+                    nudge = 80;
+                if (nudge < -80)
+                    nudge = -80;
             }
             else if (abs(ball_error) <= 15)
             {
@@ -249,9 +253,9 @@ void Mode3_Loop(void)
     }
     if (KeyNum == 3)
     {
-        test_flag       = 1;
+        test_flag = 1;
         test_start_time = tick_ms;
-        state           = Q3_STATE_IDLE;
+        state = Q3_STATE_IDLE;
         pid_reset(&question3_pid_motor);
         pid_set_setpoint(&question3_pid_motor, 0.0f);
         buzzer_on();
@@ -268,15 +272,22 @@ void Mode3_Exit(void)
 /* ---------------------------------------------------------------- */
 uint32_t question4_start_time = 0;                                     // 记录模式4开始的时间
 uint8_t question4_flag = 0;                                            // 模式4的标志位，0表示未开始，1表示已开始
-const float question4_trace_weights[8] = {-8, -6, -2, -1, 1, 2, 6, 8}; // 模式4的循迹权重数组
+const float question4_trace_weights[8] = {-8, -4, -2, -1, 1, 2, 4, 8}; // 模式4的循迹权重数组
 uint16_t question4_current_speed = 0;                                  // 模式4当前的电机速度目标值
 
 pid_t question4_pid_heading;                          // 模式4的PID控制器实例，用于调整小车的转向
-static float QUESTION4_HEADING_KP = (4.5f * 0.6f);    // 模式4的PID控制器比例系数
+static float QUESTION4_HEADING_KP = (2.8f);           // 模式4的PID控制器比例系数
 static float QUESTION4_HEADING_KI = (0.0f);           // 模式4的PID控制器积分系数
-static float QUESTION4_HEADING_KD = (18.0f);          // 模式4的PID控制器微分系数
+static float QUESTION4_HEADING_KD = (15.0f);          // 模式4的PID控制器微分系数
 static float QUESTION4_HEADING_OUTPUT_MAX = (40.0f);  // 模式4的PID控制器输出最大值
 static float QUESTION4_HEADING_OUTPUT_MIN = (-40.0f); // 模式4的PID控制器输出最小值
+
+pid_t question4_pid_motor;                         // 球杆系统PID控制器
+static float QUESTION4_MOTOR_KP = 3.5f;            // 比例系数：球偏差 → 电机脉冲
+static float QUESTION4_MOTOR_KI = 0.01f;           // 积分系数：缓慢消除稳态误差（抗饱和已内置）
+static float QUESTION4_MOTOR_KD = 18.0f;           // 微分系数：利用球速提供阻尼
+static float QUESTION4_MOTOR_OUTPUT_MAX = 280.0f;  // 电机正方向最大脉冲
+static float QUESTION4_MOTOR_OUTPUT_MIN = -280.0f; // 电机负方向最大脉冲
 
 void Mode4_Init(void)
 {
@@ -308,6 +319,71 @@ void Mode4_Loop(void)
     {
         buzzer_off();
     }
+    //     static int16_t nudge = 0; // 微扰累积量，小球静止且偏差过大时逐步累加
+
+    //     if (uart_maixcam_rx_done)
+    //     {
+    //         uart_maixcam_rx_done = 0;
+
+    //         // ---- 解析第一个数据：小球位置偏差 ----
+    //         uint8_t sign1 = uart_rx_buff[2];
+    //         uint16_t raw1 = uart_rx_buff[3] | (uart_rx_buff[4] << 8);
+    //         int16_t ball_error = (sign1 == 0x01) ? -(int16_t)raw1 : (int16_t)raw1;
+
+    //         // ---- 解析第二个数据：小球当前速度 ----
+    //         uint8_t sign2 = uart_rx_buff[5];
+    //         uint16_t raw2 = uart_rx_buff[6] | (uart_rx_buff[7] << 8);
+    //         int16_t ball_vel = (sign2 == 0x01) ? -(int16_t)raw2 : (int16_t)raw2;
+
+    //         // ---- PID 计算电机目标位置 ----
+    //         float motor_pos = pid_calculate(&question4_pid_motor, (float)ball_error);
+
+    // // ---- 微扰逻辑：小球静止且偏差 >15 时，逐步叠加微扰推动小球 ----
+    // #define QUESTION5_VEL_STILL 20 // 判定小球静止的速度阈值
+    // #define QUESTION5_NUDGE_STEP 5 // 每次微扰增量（脉冲）
+    // #define QUESTION5_NUDGE_MAX 90 // 微扰累积上限
+
+    //         if (abs(ball_error) > 15 && abs(ball_vel) < QUESTION5_VEL_STILL)
+    //         {
+    //             // 小球卡住了：按偏差反方向叠加微扰
+    //             nudge += (ball_error > 0) ? -QUESTION5_NUDGE_STEP : QUESTION5_NUDGE_STEP;
+
+    //             if (nudge > QUESTION5_NUDGE_MAX)
+    //                 nudge = QUESTION5_NUDGE_MAX;
+    //             if (nudge < -QUESTION5_NUDGE_MAX)
+    //                 nudge = -QUESTION5_NUDGE_MAX;
+    //         }
+    //         else if (abs(ball_error) <= 6)
+    //         {
+    //             nudge = 0; // 偏差达标，清零微扰
+    //         }
+    //         // else: 球在运动中，保持当前微扰不变，让其继续作用
+
+    //         motor_pos += (float)nudge;
+
+    //         // 限幅保护（电机绝对位置）
+    //         if (motor_pos > 280.0f)
+    //             motor_pos = 280.0f;
+    //         if (motor_pos < -280.0f)
+    //             motor_pos = -280.0f;
+
+    //         // // ---- 调试输出 ----
+    //         // sprintf((char *)uart_tx_buff, "e:%d v:%d m:%.0f n:%d\r\n", ball_error, ball_vel, motor_pos, nudge);
+    //         // UART_print_string(DEBUG_INST, (char *)uart_tx_buff);
+    //         // memset((char *)uart_tx_buff, 0, sizeof(uart_tx_buff));
+
+    //         // ---- 绝对位置模式驱动电机 ----
+    //         if (motor_pos >= 0)
+    //         {
+    //             Emm_V5_Pos_Control(1, 0, 500, 50, (uint32_t)motor_pos, 1, false);
+    //         }
+    //         else
+    //         {
+    //             Emm_V5_Pos_Control(1, 1, 500, 50, (uint32_t)(-motor_pos), 1, false);
+    //         }
+    //     }
+    Emm_V5_Pos_Control(1, 1, 500, 50, question4_current_speed < 30 ? question4_current_speed : 30, 1, false);
+    delay_ms(50);
 }
 
 void Mode4_Exit(void)
@@ -327,11 +403,11 @@ void Mode4_Exit(void)
 /* ---------------------------------------------------------------- */
 
 pid_t question5_pid_motor;                         // 球杆系统PID控制器
-static float QUESTION5_MOTOR_KP = 4.5f;            // 比例系数：球偏差 → 电机脉冲
-static float QUESTION5_MOTOR_KI = 0.005f;           // 积分系数：缓慢消除稳态误差（抗饱和已内置）
-static float QUESTION5_MOTOR_KD = 22.0f;           // 微分系数：利用球速提供阻尼
-static float QUESTION5_MOTOR_OUTPUT_MAX = 290.0f;  // 电机正方向最大脉冲
-static float QUESTION5_MOTOR_OUTPUT_MIN = -290.0f; // 电机负方向最大脉冲
+static float QUESTION5_MOTOR_KP = 2.8f;            // 比例系数：球偏差 → 电机脉冲
+static float QUESTION5_MOTOR_KI = 0.01f;           // 积分系数：缓慢消除稳态误差（抗饱和已内置）
+static float QUESTION5_MOTOR_KD = 15.0f;           // 微分系数：利用球速提供阻尼
+static float QUESTION5_MOTOR_OUTPUT_MAX = 280.0f;  // 电机正方向最大脉冲
+static float QUESTION5_MOTOR_OUTPUT_MIN = -280.0f; // 电机负方向最大脉冲
 
 uint32_t question5_start_time = 0;                                     // 记录模式5开始的时间
 uint8_t question5_flag = 0;                                            // 模式5的标志位，0表示未开始，1表示已开始
@@ -339,9 +415,9 @@ const float question5_trace_weights[8] = {-8, -6, -3, -1, 1, 3, 6, 8}; // 模式
 uint16_t question5_current_speed = 0;                                  // 模式5当前的电机速度目标值
 
 pid_t question5_pid_heading;                          // 模式5的PID控制器实例，用于调整小车的转向
-static float QUESTION5_HEADING_KP = 3.5f;             // 比例系数: 提高弯道响应
+static float QUESTION5_HEADING_KP = 2.7f;             // 比例系数: 提高弯道响应
 static float QUESTION5_HEADING_KI = 0.01f;            // 积分系数: 加速消除稳态偏置
-static float QUESTION5_HEADING_KD = 10.0f;            // 微分系数: 增强阻尼防振荡
+static float QUESTION5_HEADING_KD = 40.0f;            // 微分系数: 增强阻尼防振荡
 static float QUESTION5_HEADING_OUTPUT_MAX = (40.0f);  // 输出最大值
 static float QUESTION5_HEADING_OUTPUT_MIN = (-40.0f); // 输出最小值
 
@@ -349,6 +425,7 @@ void Mode5_Init(void)
 {
     OLED_Clear();
     OLED_ShowString(0, 0, (uint8_t *)"Question 5", 16);
+    // OLED_ShowString(0, 6, (uint8_t *)"VOFA: ON", 8);
 
     // 初始化球杆系统PID控制器
     pid_init(&question5_pid_motor, PID_POSITION, QUESTION5_MOTOR_KP, QUESTION5_MOTOR_KI, QUESTION5_MOTOR_KD,
@@ -359,6 +436,9 @@ void Mode5_Init(void)
     pid_init(&question5_pid_heading, PID_POSITION, QUESTION5_HEADING_KP, QUESTION5_HEADING_KI, QUESTION5_HEADING_KD,
              QUESTION5_HEADING_OUTPUT_MAX, QUESTION5_HEADING_OUTPUT_MIN);
     pid_set_setpoint(&question5_pid_heading, 0.0f); // 设置目标航向
+
+    // /* ---- 初始化 VOFA+ 驱动 ---- */
+    // vofa_init();
 
     question5_start_time = tick_ms; // 记录模式5开始的时间
     question5_flag = 1;             // 设置模式5的标志位为已开始
@@ -436,9 +516,61 @@ void Mode5_Loop(void)
         }
         else
         {
-            Emm_V5_Pos_Control(1, 1, 500, 50, (uint32_t)(-motor_pos), 1, false);
+            Emm_V5_Pos_Control(1, 1, 500, 50, (uint32_t)(-motor_pos) + 20, 1, false);
         }
     }
+
+    // /* ---- VOFA+ 调参命令处理 (Mode 5 小车转向PID) ---- */
+    // if (vofa_cmd_available())
+    // {
+    //     vofa_cmd_t cmd = vofa_get_cmd();
+    //     switch (cmd.type)
+    //     {
+    //     case VOFA_CMD_SET_KP:
+    //         QUESTION5_HEADING_KP = cmd.value;
+    //         pid_set_param(&question5_pid_heading, QUESTION5_HEADING_KP, QUESTION5_HEADING_KI, QUESTION5_HEADING_KD);
+    //         sprintf((char *)uart_tx_buff, "OK HEAD_KP=%.3f\r\n", (double)cmd.value);
+    //         UART_print_string(DEBUG_INST, (char *)uart_tx_buff);
+    //         break;
+    //
+    //     case VOFA_CMD_SET_KI:
+    //         QUESTION5_HEADING_KI = cmd.value;
+    //         pid_set_param(&question5_pid_heading, QUESTION5_HEADING_KP, QUESTION5_HEADING_KI, QUESTION5_HEADING_KD);
+    //         sprintf((char *)uart_tx_buff, "OK HEAD_KI=%.4f\r\n", (double)cmd.value);
+    //         UART_print_string(DEBUG_INST, (char *)uart_tx_buff);
+    //         break;
+    //
+    //     case VOFA_CMD_SET_KD:
+    //         QUESTION5_HEADING_KD = cmd.value;
+    //         pid_set_param(&question5_pid_heading, QUESTION5_HEADING_KP, QUESTION5_HEADING_KI, QUESTION5_HEADING_KD);
+    //         sprintf((char *)uart_tx_buff, "OK HEAD_KD=%.1f\r\n", (double)cmd.value);
+    //         UART_print_string(DEBUG_INST, (char *)uart_tx_buff);
+    //         break;
+    //
+    //     case VOFA_CMD_SET_SETPOINT:
+    //         pid_set_setpoint(&question5_pid_heading, cmd.value);
+    //         sprintf((char *)uart_tx_buff, "OK HEAD_SET=%.1f\r\n", (double)cmd.value);
+    //         UART_print_string(DEBUG_INST, (char *)uart_tx_buff);
+    //         break;
+    //
+    //     case VOFA_CMD_RESET:
+    //         pid_reset(&question5_pid_heading);
+    //         pid_set_setpoint(&question5_pid_heading, 0.0f);
+    //         pid_set_param(&question5_pid_heading, QUESTION5_HEADING_KP, QUESTION5_HEADING_KI, QUESTION5_HEADING_KD);
+    //         UART_print_string(DEBUG_INST, "OK HEAD_RESET\r\n");
+    //         break;
+    //
+    //     case VOFA_CMD_PRINT_PARAMS:
+    //         sprintf((char *)uart_tx_buff, "Q5 HEAD: KP=%.3f KI=%.4f KD=%.1f SET=%.1f\r\n",
+    //                 (double)question5_pid_heading.kp, (double)question5_pid_heading.ki,
+    //                 (double)question5_pid_heading.kd, (double)question5_pid_heading.setpoint);
+    //         UART_print_string(DEBUG_INST, (char *)uart_tx_buff);
+    //         break;
+    //
+    //     default:
+    //         break;
+    //     }
+    // }
 
     uint8_t KeyNum = Key_GetNum();
     if (KeyNum == 4)
@@ -459,19 +591,199 @@ void Mode5_Exit(void)
 /*                             模式6：第六问代码                            */
 /* ---------------------------------------------------------------- */
 
+pid_t question6_pid_motor;                         // 球杆系统PID控制器
+static float QUESTION6_MOTOR_KP = 2.5f;            // 比例系数：球偏差 → 电机脉冲
+static float QUESTION6_MOTOR_KI = 0.003f;          // 积分系数：缓慢消除稳态误差（抗饱和已内置）
+static float QUESTION6_MOTOR_KD = 25.0f;           // 微分系数：利用球速提供阻尼
+static float QUESTION6_MOTOR_OUTPUT_MAX = 270.0f;  // 电机正方向最大脉冲
+static float QUESTION6_MOTOR_OUTPUT_MIN = -270.0f; // 电机负方向最大脉冲
+
+uint32_t question6_start_time = 0;                                     // 记录模式6开始的时间
+uint8_t question6_flag = 0;                                            // 模式6的标志位，0表示未开始，1表示已开始
+const float question6_trace_weights[8] = {-8, -6, -3, -1, 1, 3, 6, 8}; // 模式6的循迹权重数组
+uint16_t question6_current_speed = 0;                                  // 模式6当前的电机速度目标值
+
+pid_t question6_pid_heading;                          // 模式6的PID控制器实例，用于调整小车的转向
+static float QUESTION6_HEADING_KP = 3.5f;             // 比例系数: 提高弯道响应
+static float QUESTION6_HEADING_KI = 0.01f;            // 积分系数: 加速消除稳态偏置
+static float QUESTION6_HEADING_KD = 15.0f;            // 微分系数: 增强阻尼防振荡
+static float QUESTION6_HEADING_OUTPUT_MAX = (40.0f);  // 输出最大值
+static float QUESTION6_HEADING_OUTPUT_MIN = (-40.0f); // 输出最小值
+
 void Mode6_Init(void)
 {
-    // 在这里添加模式6的初始化代码
+    OLED_Clear();
+    OLED_ShowString(0, 0, (uint8_t *)"Question 6", 16);
+    OLED_ShowString(0, 6, (uint8_t *)"VOFA: ON", 8);
+
+    // 初始化球杆系统PID控制器
+    pid_init(&question6_pid_motor, PID_POSITION, QUESTION6_MOTOR_KP, QUESTION6_MOTOR_KI, QUESTION6_MOTOR_KD,
+             QUESTION6_MOTOR_OUTPUT_MAX, QUESTION6_MOTOR_OUTPUT_MIN);
+    pid_set_setpoint(&question6_pid_motor, 0.0f); // 目标：小球在管中心（偏差=0）
+
+    // // 初始化模式5的PID控制器
+    // pid_init(&question6_pid_heading, PID_POSITION, QUESTION6_HEADING_KP, QUESTION6_HEADING_KI, QUESTION6_HEADING_KD,
+    //          QUESTION6_HEADING_OUTPUT_MAX, QUESTION6_HEADING_OUTPUT_MIN);
+    // pid_set_setpoint(&question6_pid_heading, 0.0f); // 设置目标航向
+
+    /* ---- 初始化 VOFA+ 驱动 ---- */
+    vofa_init();
+
+    question6_start_time = tick_ms; // 记录模式6开始的时间
+    question6_flag = 1;             // 设置模式6的标志位为已开始
+
+    // motor_set_direction(1, 1); // 设置左轮电机方向为正转
+    // motor_set_direction(2, 1); // 设置右轮电机方向为正转
+
+    buzzer_on();
 }
 
 void Mode6_Loop(void)
 {
-    // 在这里添加模式6的循环代码
+    if (tick_ms - question6_start_time > 500) // 500毫秒后关闭蜂鸣器
+    {
+        buzzer_off();
+    }
+
+    static int16_t nudge = 0; // 微扰累积量，小球静止且偏差过大时逐步累加
+
+    if (uart_maixcam_rx_done)
+    {
+        uart_maixcam_rx_done = 0;
+
+        // ---- 解析第一个数据：小球位置偏差 ----
+        uint8_t sign1 = uart_rx_buff[2];
+        uint16_t raw1 = uart_rx_buff[3] | (uart_rx_buff[4] << 8);
+        int16_t ball_error = (sign1 == 0x01) ? -(int16_t)raw1 : (int16_t)raw1;
+
+        // ---- 解析第二个数据：小球当前速度 ----
+        uint8_t sign2 = uart_rx_buff[5];
+        uint16_t raw2 = uart_rx_buff[6] | (uart_rx_buff[7] << 8);
+        int16_t ball_vel = (sign2 == 0x01) ? -(int16_t)raw2 : (int16_t)raw2;
+
+        // ---- PID 计算电机目标位置 ----
+        float motor_pos = pid_calculate(&question6_pid_motor, (float)ball_error);
+
+// ---- 微扰逻辑：小球静止且偏差 >15 时，逐步叠加微扰推动小球 ----
+#define QUESTION6_VEL_STILL 20 // 判定小球静止的速度阈值
+#define QUESTION6_NUDGE_STEP 5 // 每次微扰增量（脉冲）
+#define QUESTION6_NUDGE_MAX 80 // 微扰累积上限
+
+        if (abs(ball_error) > 15 && abs(ball_vel) < QUESTION6_VEL_STILL)
+        {
+            // 小球卡住了：按偏差反方向叠加微扰
+            nudge += (ball_error > 0) ? -QUESTION6_NUDGE_STEP : QUESTION6_NUDGE_STEP;
+
+            if (nudge > QUESTION6_NUDGE_MAX)
+                nudge = QUESTION6_NUDGE_MAX;
+            if (nudge < -QUESTION6_NUDGE_MAX)
+                nudge = -QUESTION6_NUDGE_MAX;
+        }
+        else if (abs(ball_error) <= 15)
+        {
+            nudge = 0; // 偏差达标，清零微扰
+        }
+        // else: 球在运动中，保持当前微扰不变，让其继续作用
+
+        motor_pos += (float)nudge;
+
+        // 限幅保护（电机绝对位置）
+        if (motor_pos > 330.0f)
+            motor_pos = 330.0f;
+        if (motor_pos < -330.0f)
+            motor_pos = -330.0f;
+
+        // // ---- 调试输出 ----
+        // sprintf((char *)uart_tx_buff, "e:%d v:%d m:%.0f n:%d\r\n", ball_error, ball_vel, motor_pos, nudge);
+        // UART_print_string(DEBUG_INST, (char *)uart_tx_buff);
+        // memset((char *)uart_tx_buff, 0, sizeof(uart_tx_buff));
+
+        // ---- 绝对位置模式驱动电机 ----
+        if (motor_pos >= 0)
+        {
+            Emm_V5_Pos_Control(1, 0, 500, 50, (uint32_t)motor_pos, 1, false);
+        }
+        else
+        {
+            Emm_V5_Pos_Control(1, 1, 500, 50, (uint32_t)(-motor_pos), 1, false);
+        }
+
+        /* ---- VOFA+ 实时数据发送 (5通道 JustFloat) ---- */
+        /* ch0: 目标值  ch1: 小球偏差  ch2: PID输出  ch3: 最终电机位置  ch4: 小球速度 */
+        float vofa_data[5];
+        vofa_data[0] = question6_pid_motor.setpoint;
+        vofa_data[1] = (float)ball_error;
+        vofa_data[2] = question6_pid_motor.output;
+        vofa_data[3] = motor_pos;
+        vofa_data[4] = (float)ball_vel;
+        vofa_send_frame(vofa_data, 5);
+    }
+
+    /* ---- VOFA+ 调参命令处理 ---- */
+    if (vofa_cmd_available())
+    {
+        vofa_cmd_t cmd = vofa_get_cmd();
+        switch (cmd.type)
+        {
+        case VOFA_CMD_SET_KP:
+            QUESTION6_MOTOR_KP = cmd.value;
+            pid_set_param(&question6_pid_motor, QUESTION6_MOTOR_KP, QUESTION6_MOTOR_KI, QUESTION6_MOTOR_KD);
+            sprintf((char *)uart_tx_buff, "OK KP=%.3f\r\n", (double)cmd.value);
+            UART_print_string(DEBUG_INST, (char *)uart_tx_buff);
+            break;
+
+        case VOFA_CMD_SET_KI:
+            QUESTION6_MOTOR_KI = cmd.value;
+            pid_set_param(&question6_pid_motor, QUESTION6_MOTOR_KP, QUESTION6_MOTOR_KI, QUESTION6_MOTOR_KD);
+            sprintf((char *)uart_tx_buff, "OK KI=%.4f\r\n", (double)cmd.value);
+            UART_print_string(DEBUG_INST, (char *)uart_tx_buff);
+            break;
+
+        case VOFA_CMD_SET_KD:
+            QUESTION6_MOTOR_KD = cmd.value;
+            pid_set_param(&question6_pid_motor, QUESTION6_MOTOR_KP, QUESTION6_MOTOR_KI, QUESTION6_MOTOR_KD);
+            sprintf((char *)uart_tx_buff, "OK KD=%.1f\r\n", (double)cmd.value);
+            UART_print_string(DEBUG_INST, (char *)uart_tx_buff);
+            break;
+
+        case VOFA_CMD_SET_SETPOINT:
+            pid_set_setpoint(&question6_pid_motor, cmd.value);
+            sprintf((char *)uart_tx_buff, "OK SET=%.1f\r\n", (double)cmd.value);
+            UART_print_string(DEBUG_INST, (char *)uart_tx_buff);
+            break;
+
+        case VOFA_CMD_RESET:
+            pid_reset(&question6_pid_motor);
+            pid_set_setpoint(&question6_pid_motor, 0.0f);
+            pid_set_param(&question6_pid_motor, QUESTION6_MOTOR_KP, QUESTION6_MOTOR_KI, QUESTION6_MOTOR_KD);
+            UART_print_string(DEBUG_INST, "OK RESET\r\n");
+            break;
+
+        case VOFA_CMD_PRINT_PARAMS:
+            sprintf((char *)uart_tx_buff, "Q6 PID: KP=%.3f KI=%.4f KD=%.1f SET=%.1f\r\n",
+                    (double)question6_pid_motor.kp, (double)question6_pid_motor.ki, (double)question6_pid_motor.kd,
+                    (double)question6_pid_motor.setpoint);
+            UART_print_string(DEBUG_INST, (char *)uart_tx_buff);
+            break;
+
+        default:
+            break;
+        }
+    }
+
+    uint8_t KeyNum = Key_GetNum();
+    if (KeyNum == 4)
+    {
+        NextMode = 1;
+    }
 }
 
 void Mode6_Exit(void)
 {
-    // 在这里添加模式6的退出代码
+    question6_flag = 0;          // 重置模式6的标志位
+    question6_current_speed = 0; // 重置缓启动速度
+
+    Emm_V5_Origin_Trigger_Return(1, 0, false);
 }
 
 /* ---------------------------------------------------------------- */
