@@ -192,3 +192,8 @@ void UART_MAIXCAM_INST_IRQHandler(void)
         break;
     }
 }
+
+void DEBUG_INST_IRQHandler(void)
+{
+    
+}

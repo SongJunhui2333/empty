@@ -63,6 +63,7 @@ int main(void)
     NVIC_EnableIRQ(TIMER_BASE_INST_INT_IRQN); // 使能基础定时器中断
 
     NVIC_EnableIRQ(UART_MAIXCAM_INST_INT_IRQN); // 使能MAIXCAM UART中断
+    NVIC_EnableIRQ(DEBUG_INST_INT_IRQN);        // 使能DEBUG UART中断
 
     // 初始化电机参数
     Emm_V5_En_Control(1, true, false);

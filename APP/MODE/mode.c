@@ -119,86 +119,145 @@ void Mode2_Exit(void)
 
 /* ---------------------------------------------------------------- */
 /*                             模式3：第三问代码                            */
+/*                  阶段1:管道下降 → 阶段2:管道上升 → 阶段3:球控              */
 /* ---------------------------------------------------------------- */
-static uint32_t question3_start_time = 0; // 记录模式3开始的时间
 
-#define QUESTION3_MOTOR_RiseTime 300  // 模式3的电机上升时间
-#define QUESTION3_MOTOR_DiseCLK 150   // 模式3的电机上升脉冲数
-#define QUESTION3_MOTOR_FallTime 2000 // 模式3的电机下降时间
-#define QUESTION3_MOTOR_FallCLK 150   // 模式3的电机下降脉冲数
+/* ---------- 可调参数 ---------- */
+#define QUESTION3_PHASE1_TIME_MS 800  // 阶段1持续时间（毫秒）
+#define QUESTION3_PHASE1_PULSES  110   // 阶段1管道下降脉冲数
+#define QUESTION3_PHASE2_TIME_MS 1000  // 阶段2持续时间（毫秒）
+#define QUESTION3_PHASE2_PULSES  110   // 阶段2管道上升脉冲数
+#define QUESTION3_MOTOR_MAX_PULSES 290 // 电机正反转最大脉冲限幅
+
+/* ---------- 球控PID ---------- */
+static pid_t question3_pid_motor;
+static float QUESTION3_MOTOR_KP = 2.8f;
+static float QUESTION3_MOTOR_KI = 0.01f;
+static float QUESTION3_MOTOR_KD = 15.0f;
+static float QUESTION3_MOTOR_OUTPUT_MAX = 290.0f;
+static float QUESTION3_MOTOR_OUTPUT_MIN = -290.0f;
+
+/* ---------- 状态定义 ---------- */
+#define Q3_STATE_IDLE         0  // 等待按键
+#define Q3_STATE_PHASE1_DOWN  1  // 管道下降
+#define Q3_STATE_PHASE2_UP    2  // 管道上升
+#define Q3_STATE_BALL_CONTROL 3  // 小球平衡控制
 
 void Mode3_Init(void)
 {
     OLED_Clear();
-    // 在这里添加模式3的初始化代码
     OLED_ShowString(0, 0, (uint8_t *)"QUESTION 3", 16);
-    OLED_ShowString(0, 3, (uint8_t *)"Press Key3 to Start", 8);
-    OLED_ShowString(0, 5, (uint8_t *)"Press Key4 to Exit", 8);
-    OLED_ShowString(0, 7, (uint8_t *)"Press Key5 to Adjust", 8);
-    Emm_V5_Origin_Trigger_Return(1, 0, false);
+    OLED_ShowString(0, 3, (uint8_t *)"Key3: Start", 8);
+    OLED_ShowString(0, 5, (uint8_t *)"Key4: Exit", 8);
 
-    question3_start_time = tick_ms; // 记录模式3开始的时间
+    pid_init(&question3_pid_motor, PID_POSITION,
+             QUESTION3_MOTOR_KP, QUESTION3_MOTOR_KI, QUESTION3_MOTOR_KD,
+             QUESTION3_MOTOR_OUTPUT_MAX, QUESTION3_MOTOR_OUTPUT_MIN);
+    pid_set_setpoint(&question3_pid_motor, 0.0f);
+
+    Emm_V5_Origin_Trigger_Return(1, 0, false);
 }
 
 void Mode3_Loop(void)
 {
-    static uint16_t question3_test_time = 0; // 记录模式3的测试时间
-    static uint8_t question3_test_flag = 0;  // 模式3的测试标志位，0表示未开始，1表示已开始
-    // 在这里添加模式3的循环代码
-    uint16_t elapsed_time = (tick_ms - question3_test_time); // 计算模式3运行的时间（毫秒）
+    static uint32_t test_start_time = 0;
+    static uint8_t  test_flag  = 0;
+    static uint8_t  state      = Q3_STATE_IDLE;
 
-    if (elapsed_time > 500 && question3_test_flag == 1) // 500毫秒后关闭蜂鸣器
+    uint32_t elapsed = tick_ms - test_start_time;
+
+    /* ---- 蜂鸣器: 500ms后关闭 ---- */
+    if (elapsed > 500 && test_flag == 1) { buzzer_off(); }
+
+    /* ==== 阶段1: 管道下降 ==== */
+    if (elapsed <= QUESTION3_PHASE1_TIME_MS && state == Q3_STATE_IDLE && test_flag == 1)
     {
-        buzzer_off();
+        state = Q3_STATE_PHASE1_DOWN;
+        uint32_t pulses = (QUESTION3_PHASE1_PULSES > QUESTION3_MOTOR_MAX_PULSES)
+                            ? QUESTION3_MOTOR_MAX_PULSES : QUESTION3_PHASE1_PULSES;
+        Emm_V5_Pos_Control(1, 0, 500, 50, pulses, 1, false);
+    }
+    /* ==== 阶段2: 管道上升 ==== */
+    else if (elapsed > QUESTION3_PHASE1_TIME_MS &&
+             elapsed <= (QUESTION3_PHASE1_TIME_MS + QUESTION3_PHASE2_TIME_MS) &&
+             state == Q3_STATE_PHASE1_DOWN && test_flag == 1)
+    {
+        state = Q3_STATE_PHASE2_UP;
+        uint32_t pulses = (QUESTION3_PHASE2_PULSES > QUESTION3_MOTOR_MAX_PULSES)
+                            ? QUESTION3_MOTOR_MAX_PULSES : QUESTION3_PHASE2_PULSES;
+        Emm_V5_Pos_Control(1, 1, 500, 50, pulses, 1, false);
+    }
+    /* ==== 阶段3: 小球平衡控制 ==== */
+    else if (state == Q3_STATE_PHASE2_UP &&
+             elapsed > (QUESTION3_PHASE1_TIME_MS + QUESTION3_PHASE2_TIME_MS) && test_flag == 1)
+    {
+        state = Q3_STATE_BALL_CONTROL;
     }
 
-    static uint8_t State = 0; // 电机状态，0表示未开始，1表示上升，2表示下降
+    /* ---- 阶段3: 小球平衡控制循环 ---- */
+    if (state == Q3_STATE_BALL_CONTROL)
+    {
+        static int16_t nudge = 0;
 
-    if (elapsed_time <= QUESTION3_MOTOR_RiseTime && State == 0 && question3_test_flag == 1)
-    {
-        State = 1; // 设置电机状态为下降
-        // 在电机上升时间内，设置电机上升位置
-        ZDT_MOTOR_Pos_Control(1, ZDT_MOTOR_UP, ZDT_MOTOR_Default_Vel, ZDT_MOTOR_Default_Acc, QUESTION3_MOTOR_DiseCLK,
-                              false);
-    }
-    else if (elapsed_time >= QUESTION3_MOTOR_RiseTime &&
-             elapsed_time <= (QUESTION3_MOTOR_RiseTime + QUESTION3_MOTOR_FallTime) && State == 1 &&
-             question3_test_flag == 1)
-    {
-        State = 2; // 设置电机状态为上升
-        // 在电机下降时间内，设置电机下降位置
-        ZDT_MOTOR_Pos_Control(1, ZDT_MOTOR_DOWN, ZDT_MOTOR_Default_Vel, ZDT_MOTOR_Default_Acc, QUESTION3_MOTOR_FallCLK,
-                              false);
-    }
-    else if (State == 2 && elapsed_time > (QUESTION3_MOTOR_RiseTime + QUESTION3_MOTOR_FallTime) &&
-             question3_test_flag == 1)
-    {
-        State = 0;               // 重置电机状态为未开始
-        question3_test_flag = 0; // 重置模式3的测试标志位为未开始
-        // 电机回0
-        Emm_V5_Origin_Trigger_Return(1, 0, false);
+        if (uart_maixcam_rx_done)
+        {
+            uart_maixcam_rx_done = 0;
+
+            uint8_t  sign1 = uart_rx_buff[2];
+            uint16_t raw1  = uart_rx_buff[3] | (uart_rx_buff[4] << 8);
+            int16_t  ball_error = (sign1 == 0x01) ? -(int16_t)raw1 : (int16_t)raw1;
+
+            uint8_t  sign2 = uart_rx_buff[5];
+            uint16_t raw2  = uart_rx_buff[6] | (uart_rx_buff[7] << 8);
+            int16_t  ball_vel = (sign2 == 0x01) ? -(int16_t)raw2 : (int16_t)raw2;
+
+            float motor_pos = pid_calculate(&question3_pid_motor, (float)ball_error);
+
+            // 微扰逻辑
+            if (abs(ball_error) > 15 && abs(ball_vel) < 20)
+            {
+                nudge += (ball_error > 0) ? -5 : 5;
+                if (nudge > 80)  nudge = 80;
+                if (nudge < -80) nudge = -80;
+            }
+            else if (abs(ball_error) <= 15)
+            {
+                nudge = 0;
+            }
+
+            motor_pos += (float)nudge;
+
+            if (motor_pos > (float)QUESTION3_MOTOR_MAX_PULSES)
+                motor_pos = (float)QUESTION3_MOTOR_MAX_PULSES;
+            if (motor_pos < -(float)QUESTION3_MOTOR_MAX_PULSES)
+                motor_pos = -(float)QUESTION3_MOTOR_MAX_PULSES;
+
+            if (motor_pos >= 0)
+                Emm_V5_Pos_Control(1, 0, 500, 50, (uint32_t)motor_pos, 1, false);
+            else
+                Emm_V5_Pos_Control(1, 1, 500, 50, (uint32_t)(-motor_pos), 1, false);
+        }
     }
 
+    /* ---- 按键处理 ---- */
     uint8_t KeyNum = Key_GetNum();
-    if (KeyNum == 4) // 按键4被按下
+    if (KeyNum == 4)
     {
-        NextMode = 1; // 切换回模式1，选择问题模式
+        NextMode = 1;
     }
-    if (KeyNum == 5)
+    if (KeyNum == 3)
     {
-        NextMode = 8; // 切换到模式8，调参入口模式
-    }
-    if (KeyNum == 3) // 按键3被按下
-    {
-        question3_test_flag = 1;       // 设置模式3的测试标志位为已开始
-        question3_test_time = tick_ms; // 记录模式3的测试开始时间
-        buzzer_on();                   // 打开蜂鸣器
+        test_flag       = 1;
+        test_start_time = tick_ms;
+        state           = Q3_STATE_IDLE;
+        pid_reset(&question3_pid_motor);
+        pid_set_setpoint(&question3_pid_motor, 0.0f);
+        buzzer_on();
     }
 }
+
 void Mode3_Exit(void)
 {
-    // 在这里添加模式3的退出代码
-    // Emm_V5_Stop_Now(1, false); // 停止步进电机电机
     Emm_V5_Origin_Trigger_Return(1, 0, false);
 }
 
