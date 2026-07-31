@@ -280,10 +280,10 @@ void MOTOR_CONTROL_INST_IRQHandler(void)
         /* 使用编码器计数值作为速度反馈进行PID计算 */
         float ctrl_l = pid_calculate(&pid_motor_l, (float)filt_velocity_l);
         float ctrl_r = pid_calculate(&pid_motor_r, (float)filt_velocity_r);
-        if (ctrl_l > 20)
-            ctrl_l = 20;
-        if (ctrl_r > 20)
-            ctrl_r = 20;
+        // if (ctrl_l > 20)
+        //     ctrl_l = 20;
+        // if (ctrl_r > 20)
+        //     ctrl_r = 20;
 
         /* 将PID输出转换为电机占空比并施加到电机 */
         motor_set_duty(2, (uint16_t)(100 * ctrl_r));

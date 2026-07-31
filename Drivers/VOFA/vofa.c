@@ -15,6 +15,9 @@ static uint8_t vofa_rx_idx = 0;               /* 缓冲区写入索引 */
 static volatile uint8_t vofa_cmd_ready = 0;   /* 命令就绪标志 */
 static vofa_cmd_t       vofa_cmd_curr;        /* 当前待处理命令 */
 
+/* ---- TX 忙标志 (主循环发送时置位, ISR 跳过发送防冲突) ---- */
+volatile uint8_t vofa_tx_busy = 0;
+
 /* ========================================================================== */
 /*                           初始化                                            */
 /* ========================================================================== */
@@ -133,11 +136,74 @@ static void vofa_parse_command(const char *line)
         return;
     }
 
+    /* ---- SPD=xxx 命令 (电机基础速度) ---- */
+    if (strncmp(line, "SPD=", 4) == 0)
+    {
+        vofa_cmd_curr.type  = VOFA_CMD_SET_SPEED;
+        vofa_cmd_curr.value = (float)atof(line + 4);
+        vofa_cmd_ready      = 1;
+        return;
+    }
+
     /* ---- SET=xxx 命令 ---- */
     if (strncmp(line, "SET=", 4) == 0)
     {
         vofa_cmd_curr.type  = VOFA_CMD_SET_SETPOINT;
         vofa_cmd_curr.value = (float)atof(line + 4);
+        vofa_cmd_ready      = 1;
+        return;
+    }
+
+    /* ---- BKP=xxx 命令 (球控 Kp) ---- */
+    if (strncmp(line, "BKP=", 4) == 0)
+    {
+        vofa_cmd_curr.type  = VOFA_CMD_SET_BALL_KP;
+        vofa_cmd_curr.value = (float)atof(line + 4);
+        vofa_cmd_ready      = 1;
+        return;
+    }
+
+    /* ---- BKI=xxx 命令 (球控 Ki) ---- */
+    if (strncmp(line, "BKI=", 4) == 0)
+    {
+        vofa_cmd_curr.type  = VOFA_CMD_SET_BALL_KI;
+        vofa_cmd_curr.value = (float)atof(line + 4);
+        vofa_cmd_ready      = 1;
+        return;
+    }
+
+    /* ---- BFF=xxx 命令 (球控前馈增益) ---- */
+    if (strncmp(line, "BFF=", 4) == 0)
+    {
+        vofa_cmd_curr.type  = VOFA_CMD_SET_BALL_FF;
+        vofa_cmd_curr.value = (float)atof(line + 4);
+        vofa_cmd_ready      = 1;
+        return;
+    }
+
+    /* ---- BKD=xxx 命令 (球控 Kd) ---- */
+    if (strncmp(line, "BKD=", 4) == 0)
+    {
+        vofa_cmd_curr.type  = VOFA_CMD_SET_BALL_KD;
+        vofa_cmd_curr.value = (float)atof(line + 4);
+        vofa_cmd_ready      = 1;
+        return;
+    }
+
+    /* ---- BRESET 命令 (复位球控PID) ---- */
+    if (strncmp(line, "BRESET", 6) == 0)
+    {
+        vofa_cmd_curr.type  = VOFA_CMD_RESET_BALL;
+        vofa_cmd_curr.value = 0.0f;
+        vofa_cmd_ready      = 1;
+        return;
+    }
+
+    /* ---- BPRINT 命令 (打印球控PID参数) ---- */
+    if (strncmp(line, "BPRINT", 6) == 0)
+    {
+        vofa_cmd_curr.type  = VOFA_CMD_PRINT_BALL_PARAMS;
+        vofa_cmd_curr.value = 0.0f;
         vofa_cmd_ready      = 1;
         return;
     }

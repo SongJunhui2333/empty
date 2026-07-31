@@ -45,35 +45,71 @@ void gray_trace(uint8_t *sensorValues, const float *weights, pid_t *pid_controll
 
     float calcu = (float)weighted_sum / (float)gray_sum; // 计算偏差值
 
-    // /* ---- Mode 5 一阶低通滤波: 平滑灰度偏差值, 减少转向抖动 ---- */
-    // {
-    //     static float   last_filtered_calcu = 0.0f;
-    //     static uint8_t was_mode5           = 0;
-    //
-    //     if (question5_flag == 1)
-    //     {
-    //         /* 刚进入 Mode 5 时用当前偏差值初始化滤波器, 避免从旧值跳变 */
-    //         if (!was_mode5)
-    //         {
-    //             last_filtered_calcu = calcu;
-    //             was_mode5           = 1;
-    //         }
-    //
-    //         float a = 0.15f; /* 滤波系数: 0~1, 越小越平滑 (0.3 ≈ 60ms 时间常数) */
-    //         calcu = a * calcu + (1.0f - a) * last_filtered_calcu;
-    //         last_filtered_calcu = calcu;
-    //     }
-    //     else
-    //     {
-    //         was_mode5 = 0; /* 退出 Mode 5, 下次进入重新初始化 */
-    //     }
-    // }
+    /* ---- Mode 5/6 一阶低通滤波: 平滑灰度偏差值, 减少转向抖动 ---- */
+    {
+        static float last_filtered_calcu = 0.0f;
+        static uint8_t was_active = 0;
+
+        if (question5_flag == 1 || question6_flag == 1)
+        {
+            /* 刚进入滤波模式时用当前偏差值初始化滤波器, 避免从旧值跳变 */
+            if (!was_active)
+            {
+                last_filtered_calcu = calcu;
+                was_active = 1;
+            }
+
+            float a = 0.15f; /* 滤波系数: 0~1, 越小越平滑 (0.15 ≈ 140ms 时间常数) */
+            calcu = a * calcu + (1.0f - a) * last_filtered_calcu;
+            last_filtered_calcu = calcu;
+        }
+        else
+        {
+            was_active = 0; /* 退出滤波模式, 下次进入重新初始化 */
+        }
+    }
+
+    /* ---- Mode 2 一阶低通滤波: 滤波系数 0.3, 响应更快 ---- */
+    {
+        static float last_filtered_calcu = 0.0f;
+        static uint8_t was_q2 = 0;
+
+        if (question2_flag == 1)
+        {
+            if (!was_q2)
+            {
+                last_filtered_calcu = calcu;
+                was_q2 = 1;
+            }
+
+            float a = 0.6f; /* 滤波系数: 0.3 ≈ 60ms 时间常数 */
+            calcu = a * calcu + (1.0f - a) * last_filtered_calcu;
+            last_filtered_calcu = calcu;
+        }
+        else
+        {
+            was_q2 = 0;
+        }
+    }
 
     float steering = pid_calculate(pid_controller, calcu); // 使用PID计算转向调整值
 
     // /* ---- VOFA+ 实时数据发送: Mode 5 小车转向PID (5通道 JustFloat) ---- */
     // /* ch0:目标值  ch1:灰度偏差  ch2:steering  ch3:PID误差  ch4:黑线数 */
-    // if (question5_flag == 1)
+    // if (question5_flag == 1 && !vofa_tx_busy)
+    // {
+    //     float vofa_data[5];
+    //     vofa_data[0] = pid_controller->setpoint;
+    //     vofa_data[1] = calcu;
+    //     vofa_data[2] = steering;
+    //     vofa_data[3] = pid_controller->error;
+    //     vofa_data[4] = (float)gray_sum;
+    //     vofa_send_frame(vofa_data, 5);
+    // }
+
+    // /* ---- VOFA+ 实时数据发送: Mode 2 小车转向PID (5通道 JustFloat) ---- */
+    // /* ch0:目标值  ch1:灰度偏差  ch2:steering  ch3:PID误差  ch4:黑线数 */
+    // if (question2_flag == 1)
     // {
     //     float vofa_data[5];
     //     vofa_data[0] = pid_controller->setpoint;
@@ -103,7 +139,8 @@ void gray_trace_tick()
             gray_trace(gw_gray_sensor, question2_trace_weights, &question2_pid_heading, QUESTION2_MOTOR_BASE_SPEED,
                        QUESTION2_MOTOR_BASE_SPEED);
 
-            if ((gray_sum >= 4)) // 如果检测到4个或以上的黑线，则认为问题2完成，切换到模式1
+            if ((gray_sum >= QUESTION2_BLACK_LINE_THRESHOLD) &&
+                tick_ms - question2_start_time > 10000) /* 检测到阈值以上黑线则认为完成 */
             {
                 NextMode = 1; // 切换到模式1，重新选择问题
             }
@@ -146,6 +183,23 @@ void gray_trace_tick()
 
             gray_trace(gw_gray_sensor, question5_trace_weights, &question5_pid_heading, question5_current_speed,
                        question5_current_speed);
+        }
+        else if (question6_flag == 1)
+        {
+            // 缓启动：每隔20ms线性插值，使电机速度从0平滑上升到最大速度
+            uint32_t elapsed = tick_ms - question6_start_time;
+            if (elapsed < QUESTION6_RAMP_TIME_MS)
+            {
+                question6_current_speed =
+                    (uint16_t)((uint32_t)QUESTION6_MOTOR_MAX_SPEED * elapsed / QUESTION6_RAMP_TIME_MS);
+            }
+            else
+            {
+                question6_current_speed = QUESTION6_MOTOR_MAX_SPEED;
+            }
+
+            gray_trace(gw_gray_sensor, question6_trace_weights, &question6_pid_heading, question6_current_speed,
+                       question6_current_speed);
         }
     }
 }

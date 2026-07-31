@@ -28,14 +28,26 @@ typedef enum {
     VOFA_CMD_SET_KI,        /* 设置 Ki: KI=0.01 */
     VOFA_CMD_SET_KD,        /* 设置 Kd: KD=10.0 */
     VOFA_CMD_SET_SETPOINT,  /* 设置目标值: SET=100 */
+    VOFA_CMD_SET_SPEED,     /* 设置电机基础速度: SPD=60 */
     VOFA_CMD_RESET,         /* 复位PID: RESET */
     VOFA_CMD_PRINT_PARAMS,  /* 打印当前参数: PRINT */
+
+    /* ---- 控球 PID 专用命令 ---- */
+    VOFA_CMD_SET_BALL_KP,       /* 设置球控 Kp: BKP=1.5 */
+    VOFA_CMD_SET_BALL_KI,       /* 设置球控 Ki: BKI=0.01 */
+    VOFA_CMD_SET_BALL_KD,       /* 设置球控 Kd: BKD=10.0 */
+    VOFA_CMD_SET_BALL_FF,       /* 设置前馈增益: BFF=0.2 */
+    VOFA_CMD_RESET_BALL,        /* 复位球控PID: BRESET */
+    VOFA_CMD_PRINT_BALL_PARAMS, /* 打印球控参数: BPRINT */
 } vofa_cmd_type_t;
+
+/* ---- TX 忙标志 (防止 ISR 与主循环并发发送导致数据错乱) ---- */
+extern volatile uint8_t vofa_tx_busy;
 
 /* ---- 命令结构体 ---- */
 typedef struct {
     vofa_cmd_type_t type;   /* 命令类型 */
-    float           value;  /* 命令值 (对 RESET/PRINT 无效) */
+    float           value;  /* 命令值 (对 RESET/PRINT/BRESET/BPRINT 无效) */
 } vofa_cmd_t;
 
 /* ========================================================================== */

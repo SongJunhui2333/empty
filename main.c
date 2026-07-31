@@ -117,6 +117,12 @@ int main(void)
             case 8:
                 Mode8_Loop();
                 break;
+            case 9:
+                Mode9_Loop();
+                break;
+            case 10:
+                Mode10_Loop();
+                break;
             default:
                 break;
             }
@@ -149,6 +155,12 @@ int main(void)
             case 8:
                 Mode8_Exit();
                 break;
+            case 9:
+                Mode9_Exit();
+                break;
+            case 10:
+                Mode10_Exit();
+                break;
             default:
                 break;
             }
@@ -178,6 +190,12 @@ int main(void)
                 break;
             case 8:
                 Mode8_Init();
+                break;
+            case 9:
+                Mode9_Init();
+                break;
+            case 10:
+                Mode10_Init();
                 break;
             default:
                 break;
