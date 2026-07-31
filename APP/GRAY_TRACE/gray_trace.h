@@ -7,6 +7,7 @@
 #include "pid.h"
 #include "ti_msp_dl_config.h"
 #include "uart.h"
+#include "string.h"
 
 // void gray_trace(uint8_t *sensorValues);
 void gray_trace_tick();

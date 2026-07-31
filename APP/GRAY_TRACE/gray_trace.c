@@ -24,17 +24,17 @@ uint8_t get_gray_num(uint8_t *sensorValues)
  * @param motor_l_base_speed 左轮电机的基础速度。
  * @param motor_r_base_speed 右轮电机的基础速度。
  */
-void gray_trace(uint8_t *sensorValues, const short *weights, pid_t *pid_controller, uint16_t motor_l_base_speed,
+void gray_trace(uint8_t *sensorValues, const float *weights, pid_t *pid_controller, uint16_t motor_l_base_speed,
                 uint16_t motor_r_base_speed)
 {
 
     uint8_t gray_sum = get_gray_num(sensorValues);
 
-    int16_t weighted_sum = 0; // 加权和
+    float weighted_sum = 0; // 加权和
 
     for (int i = 0; i < 8; i++)
     {
-        weighted_sum += sensorValues[i] * weights[i];
+        weighted_sum += (float)sensorValues[i] * weights[i];
     }
 
     if (gray_sum == 0)
@@ -46,7 +46,7 @@ void gray_trace(uint8_t *sensorValues, const short *weights, pid_t *pid_controll
 
     float steering = pid_calculate(pid_controller, calcu); // 使用PID计算转向调整值
 
-    sprintf((char *)uart_tx_buff, "checkingData: %.2f,%.2f\r\n", calcu, steering);
+    sprintf((char *)uart_tx_buff, "calc: %.2f, steering: %.2f\r\n", calcu, steering);
     UART_print_string(DEBUG_INST, (char *)uart_tx_buff);
     memset((void *)uart_tx_buff, 0, 128);
 
@@ -69,7 +69,7 @@ void gray_trace_tick()
             gray_trace(gw_gray_sensor, question2_trace_weights, &question2_pid_heading, QUESTION2_MOTOR_BASE_SPEED,
                        QUESTION2_MOTOR_BASE_SPEED);
 
-            if (gray_sum >= 4) // 如果检测到3个或以上的黑线，则认为问题2完成，切换到模式1
+            if ((gray_sum >= 4)) // 如果检测到4个或以上的黑线，则认为问题2完成，切换到模式1
             {
                 NextMode = 1; // 切换到模式1，重新选择问题
             }
@@ -95,6 +95,23 @@ void gray_trace_tick()
             // pid_set_setpoint(&pid_motor_r, (float)question4_current_speed);
             gray_trace(gw_gray_sensor, question4_trace_weights, &question4_pid_heading, question4_current_speed,
                        question4_current_speed);
+        }
+        else if (question5_flag == 1)
+        {
+            // 缓启动：每隔20ms线性插值，使电机速度从0平滑上升到最大速度
+            uint32_t elapsed = tick_ms - question5_start_time;
+            if (elapsed < QUESTION5_RAMP_TIME_MS)
+            {
+                question5_current_speed =
+                    (uint16_t)((uint32_t)QUESTION5_MOTOR_MAX_SPEED * elapsed / QUESTION5_RAMP_TIME_MS);
+            }
+            else
+            {
+                question5_current_speed = QUESTION5_MOTOR_MAX_SPEED;
+            }
+
+            gray_trace(gw_gray_sensor, question5_trace_weights, &question5_pid_heading, question5_current_speed,
+                       question5_current_speed);
         }
     }
 }

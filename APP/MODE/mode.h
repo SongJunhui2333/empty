@@ -9,6 +9,7 @@
 #include "motor.h"
 #include "oled_hardware_i2c.h"
 #include "stdio.h"
+#include "string.h"
 #include "ti_msp_dl_config.h"
 
 extern uint8_t CurrentMode; // 当前模式编号，0表示未选择模式
@@ -20,8 +21,8 @@ void Mode1_Loop(void);
 void Mode1_Exit(void);
 
 /* --------------------------- 模式2：第二问代码 -------------------------- */
-#define QUESTION2_MOTOR_BASE_SPEED 70          // 模式2的电机基础速度
-extern const short question2_trace_weights[8]; // 模式2的循迹权重数组
+extern uint16_t QUESTION2_MOTOR_BASE_SPEED;    // 模式2的电机基础速度
+extern const float question2_trace_weights[8]; // 模式2的循迹权重数组
 extern pid_t question2_pid_heading;            // 模式2的PID控制器实例，用于调整小车的转向
 #define QUESTION2_HEADING_SETPOINT (0.0f)      // 模式2的PID控制器目标航向值
 
@@ -38,7 +39,7 @@ void Mode3_Exit(void);
 /* --------------------------- 模式4：第四问代码 -------------------------- */
 extern pid_t question4_pid_heading;            // 模式4的PID控制器实例，用于调整小车的转向
 extern uint8_t question4_flag;                 // 模式4的标志位，0表示未开始，1表示已开始
-extern const short question4_trace_weights[8]; // 模式4的循迹权重数组
+extern const float question4_trace_weights[8]; // 模式4的循迹权重数组
 extern uint32_t question4_start_time;          // 记录模式4开始的时间
 #define QUESTION4_MOTOR_MAX_SPEED 60           // 模式4的电机最大速度（PID目标值）
 #define QUESTION4_RAMP_TIME_MS 8000            // 模式4的缓启动时间（毫秒），可自行修改
@@ -48,7 +49,14 @@ void Mode4_Loop(void);
 void Mode4_Exit(void);
 
 /* --------------------------- 模式5：第五问代码 -------------------------- */
-extern pid_t question5_pid_motor; // 球杆系统PID控制器
+extern pid_t question5_pid_motor;              // 球杆系统PID控制器
+extern pid_t question5_pid_heading;            // 模式5的PID控制器实例，用于调整小车的转向
+extern uint8_t question5_flag;                 // 问题5的标志位，1表示已开始，0表示未开始
+extern const float question5_trace_weights[8]; // 模式5的循迹权重数组
+extern uint32_t question5_start_time;          // 记录模式5开始的时间
+#define QUESTION5_MOTOR_MAX_SPEED 43           // 模式5的电机最大速度（PID目标值）
+#define QUESTION5_RAMP_TIME_MS 8000            // 模式5的缓启动时间（毫秒），可自行修改
+extern uint16_t question5_current_speed;       // 模式5当前的电机速度目标值（缓启动过程中实时变化）
 void Mode5_Init(void);
 void Mode5_Loop(void);
 void Mode5_Exit(void);

@@ -46,6 +46,18 @@ void pid_set_param(pid_t *pid, float kp, float ki, float kd)
 }
 
 /**
+ * @brief 设定PID积分限幅值（抗积分饱和）
+ * @param pid       PID结构体指针
+ * @param max_limit 积分上限
+ * @param min_limit 积分下限
+ */
+void pid_set_integral_limit(pid_t *pid, float max_limit, float min_limit)
+{
+    pid->integral_max = max_limit;
+    pid->integral_min = min_limit;
+}
+
+/**
  * @brief PID计算核心函数
  *        根据模式选择位置式或增量式计算
  */
