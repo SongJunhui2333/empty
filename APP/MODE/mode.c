@@ -1,4 +1,5 @@
 #include "mode.h"
+#include <stdlib.h>
 
 uint8_t CurrentMode = 0; // 当前模式编号，0表示未选择模式
 uint8_t NextMode = 1;    // 下一个模式编号，0表示未选择模式
@@ -150,6 +151,7 @@ void Mode3_Init(void)
     OLED_ShowString(0, 3, (uint8_t *)"Key3: Start", 8);
     OLED_ShowString(0, 5, (uint8_t *)"Key4: Exit", 8);
 
+    /* ---- 初始化 PID ---- */
     pid_init(&question3_pid_motor, PID_POSITION,
              QUESTION3_MOTOR_KP, QUESTION3_MOTOR_KI, QUESTION3_MOTOR_KD,
              QUESTION3_MOTOR_OUTPUT_MAX, QUESTION3_MOTOR_OUTPUT_MIN);
@@ -325,11 +327,11 @@ void Mode4_Exit(void)
 /* ---------------------------------------------------------------- */
 
 pid_t question5_pid_motor;                         // 球杆系统PID控制器
-static float QUESTION5_MOTOR_KP = 2.8f;            // 比例系数：球偏差 → 电机脉冲
-static float QUESTION5_MOTOR_KI = 0.01f;           // 积分系数：缓慢消除稳态误差（抗饱和已内置）
-static float QUESTION5_MOTOR_KD = 15.0f;           // 微分系数：利用球速提供阻尼
-static float QUESTION5_MOTOR_OUTPUT_MAX = 280.0f;  // 电机正方向最大脉冲
-static float QUESTION5_MOTOR_OUTPUT_MIN = -280.0f; // 电机负方向最大脉冲
+static float QUESTION5_MOTOR_KP = 4.5f;            // 比例系数：球偏差 → 电机脉冲
+static float QUESTION5_MOTOR_KI = 0.005f;           // 积分系数：缓慢消除稳态误差（抗饱和已内置）
+static float QUESTION5_MOTOR_KD = 22.0f;           // 微分系数：利用球速提供阻尼
+static float QUESTION5_MOTOR_OUTPUT_MAX = 290.0f;  // 电机正方向最大脉冲
+static float QUESTION5_MOTOR_OUTPUT_MIN = -290.0f; // 电机负方向最大脉冲
 
 uint32_t question5_start_time = 0;                                     // 记录模式5开始的时间
 uint8_t question5_flag = 0;                                            // 模式5的标志位，0表示未开始，1表示已开始

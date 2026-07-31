@@ -1,4 +1,5 @@
 #include "uart.h"
+#include "../VOFA/vofa.h"
 #include <string.h>
 
 /* --------------------------- uart相关变量 --------------------------- */
@@ -195,5 +196,14 @@ void UART_MAIXCAM_INST_IRQHandler(void)
 
 void DEBUG_INST_IRQHandler(void)
 {
-    
+    switch (DL_UART_Main_getPendingInterrupt(DEBUG_INST))
+    {
+    case DL_UART_MAIN_IIDX_RX: {
+        uint8_t rx_byte = DL_UART_receiveDataBlocking(DEBUG_INST);
+        vofa_rx_isr(rx_byte);
+        break;
+    }
+    default:
+        break;
+    }
 }
