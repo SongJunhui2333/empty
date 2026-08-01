@@ -304,6 +304,10 @@ void TIMER_BASE_INST_IRQHandler(void)
     case DL_TIMER_IIDX_LOAD: {
         // 处理定时器中断
         gw_gray_serial_tick(); // 处理灰度传感器串口数据
+        if(get_gray_num(gw_gray_sensor) >= 4)
+        {
+            NextMode = 1;
+        }
         gray_trace_tick();
         Key_Tick();
         break;

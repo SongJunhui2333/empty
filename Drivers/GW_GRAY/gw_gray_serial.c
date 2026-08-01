@@ -1,7 +1,7 @@
 #include "gw_gray_serial.h"
 
-unsigned char Digtal;
-uint8_t gw_gray_sensor[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+volatile unsigned char Digtal;
+volatile uint8_t gw_gray_sensor[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
 /**
  * @brief 读取灰度传感器的值

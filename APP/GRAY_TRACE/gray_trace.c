@@ -82,7 +82,7 @@ void gray_trace(uint8_t *sensorValues, const float *weights, pid_t *pid_controll
                 was_q2 = 1;
             }
 
-            float a = 0.6f; /* 滤波系数: 0.3 ≈ 60ms 时间常数 */
+            float a = 0.3f; /* 滤波系数: 0.3 ≈ 60ms 时间常数 */
             calcu = a * calcu + (1.0f - a) * last_filtered_calcu;
             last_filtered_calcu = calcu;
         }

@@ -187,6 +187,10 @@ void Mode2_Exit(void)
     // motor_set_direction(1, 0);         // 设置左轮电机方向为停止
     // motor_set_direction(2, 0);         // 设置右轮电机方向为停止
     pid_reset(&question2_pid_heading); // 重置模式2的PID控制器
+
+    buzzer_on(); // 打开蜂鸣器，提示模式2结束
+    delay_ms(500);
+    buzzer_off(); // 关闭蜂鸣器
 }
 
 /* ---------------------------------------------------------------- */
@@ -378,8 +382,8 @@ static float QUESTION4_HEADING_OUTPUT_MAX = (40.0f);  // 模式4的PID控制器�
 static float QUESTION4_HEADING_OUTPUT_MIN = (-40.0f); // 模式4的PID控制器输出最小值
 
 pid_t question4_pid_motor;                         // 球杆系统PID控制器
-static float QUESTION4_MOTOR_KP = 2.7f;            // 比例系数：球偏差 → 电机脉冲
-static float QUESTION4_MOTOR_KI = 0.015f;          // 积分系数：缓慢消除稳态误差（抗饱和已内置）
+static float QUESTION4_MOTOR_KP = 2.9f;            // 比例系数：球偏差 → 电机脉冲
+static float QUESTION4_MOTOR_KI = 0.005f;          // 积分系数：缓慢消除稳态误差（抗饱和已内置）
 static float QUESTION4_MOTOR_KD = 40.0f;           // 微分系数：利用球速提供阻尼
 static float QUESTION4_PIPE_FF_GAIN = 0.7f;        // 水管弓形前馈增益 (脉冲/像素)
 static float QUESTION4_MOTOR_OUTPUT_MAX = 280.0f;  // 电机正方向最大脉冲
@@ -1163,7 +1167,8 @@ typedef struct
 
 static const q2_preset_t q2_preset[] = {
     {50, 2.4f, 0.4f, 22.0f}, /* 方案 A: 慢速 */
-    {70, 2.4f, 0.5f, 25.0f}, /* 方案 B: 快速 */
+    {70, 2.4f, 0.5f, 25.0f}, /* 方案 B: 中速 */
+    {90, 2.4f, 0.5f, 25.0f}, /* 方案 C: 快速 */
 };
 
 #define Q2_PRESET_COUNT (sizeof(q2_preset) / sizeof(q2_preset[0]))
@@ -1186,7 +1191,9 @@ void Mode10_Init(void)
     OLED_ShowString(0, 0, (uint8_t *)"Q2 Task Set", 16);
 
     /* 初始选中当前 Mode 2 的速度值对应的方案 */
-    if (QUESTION2_MOTOR_BASE_SPEED == q2_preset[1].motor_speed)
+    if (QUESTION2_MOTOR_BASE_SPEED == q2_preset[2].motor_speed)
+        q10_selected = 2;
+    else if (QUESTION2_MOTOR_BASE_SPEED == q2_preset[1].motor_speed)
         q10_selected = 1;
     else
         q10_selected = 0;
@@ -1201,10 +1208,15 @@ void Mode10_Loop(void)
 
     if (q10_edit_mode == 0)
     {
-        /* ---- 方案切换模式 ---- */
-        if (KeyNum == 1 || KeyNum == 2)
+        /* ---- 方案切换: Key1下一方案, Key2上一方案 ---- */
+        if (KeyNum == 1)
         {
-            q10_selected = !q10_selected;
+            q10_selected = (q10_selected + 1) % Q2_PRESET_COUNT;
+            q10_apply_preset(q10_selected);
+        }
+        else if (KeyNum == 2)
+        {
+            q10_selected = (q10_selected + Q2_PRESET_COUNT - 1) % Q2_PRESET_COUNT;
             q10_apply_preset(q10_selected);
         }
         else if (KeyNum == 4)
@@ -1236,18 +1248,27 @@ void Mode10_Loop(void)
     }
 
     /* ---- OLED 显示 ---- */
-    if (q10_selected == 0)
-        OLED_ShowString(0, 2, (uint8_t *)"  A:50       ", 16);
-    else
-        OLED_ShowString(0, 2, (uint8_t *)"  B:70       ", 16);
+    sprintf((char *)oled_show_buff, "SPD:%d K1:-> K2:<-",
+            q2_preset[q10_selected].motor_speed);
+    OLED_ShowString(0, 2, (uint8_t *)oled_show_buff, 16);
 
-    sprintf((char *)oled_show_buff, "THR:%d K1/2:Adj", QUESTION2_BLACK_LINE_THRESHOLD);
+    sprintf((char *)oled_show_buff, "THR:%d K3:Mode",
+            QUESTION2_BLACK_LINE_THRESHOLD);
     OLED_ShowString(0, 5, (uint8_t *)oled_show_buff, 8);
 
     if (q10_edit_mode == 0)
-        OLED_ShowString(0, 7, (uint8_t *)">>TASK  <<  ", 8);
+    {
+        if (q10_selected == 0)
+            OLED_ShowString(0, 7, (uint8_t *)">>A<< B  C  ", 8);
+        else if (q10_selected == 1)
+            OLED_ShowString(0, 7, (uint8_t *)"  A >>B<< C  ", 8);
+        else
+            OLED_ShowString(0, 7, (uint8_t *)"  A  B >>C<<", 8);
+    }
     else
-        OLED_ShowString(0, 7, (uint8_t *)">>THR  <<  ", 8);
+    {
+        OLED_ShowString(0, 7, (uint8_t *)">>THR<< K4:Bk", 8);
+    }
 }
 
 void Mode10_Exit(void)
@@ -1262,10 +1283,10 @@ void Mode10_Exit(void)
 
 typedef struct
 {
-    float kp;   /* 比例系数 */
-    float ki;   /* 积分系数 */
-    float kd;   /* 微分系数 */
-    float ff;   /* 前馈增益 */
+    float kp; /* 比例系数 */
+    float ki; /* 积分系数 */
+    float kd; /* 微分系数 */
+    float ff; /* 前馈增益 */
 } q6_preset_t;
 
 static const q6_preset_t q6_preset[] = {
@@ -1277,9 +1298,9 @@ static uint8_t q11_selected = 0;
 
 static void q11_apply_preset(uint8_t index)
 {
-    QUESTION6_MOTOR_KP     = q6_preset[index].kp;
-    QUESTION6_MOTOR_KI     = q6_preset[index].ki;
-    QUESTION6_MOTOR_KD     = q6_preset[index].kd;
+    QUESTION6_MOTOR_KP = q6_preset[index].kp;
+    QUESTION6_MOTOR_KI = q6_preset[index].ki;
+    QUESTION6_MOTOR_KD = q6_preset[index].kd;
     QUESTION6_PIPE_FF_GAIN = q6_preset[index].ff;
 }
 
@@ -1289,8 +1310,7 @@ void Mode11_Init(void)
     OLED_ShowString(0, 0, (uint8_t *)"Q6 Ball Preset", 16);
 
     /* 检测当前参数匹配到对应方案 */
-    if (QUESTION6_MOTOR_KP == q6_preset[1].kp &&
-        QUESTION6_MOTOR_KD == q6_preset[1].kd)
+    if (QUESTION6_MOTOR_KP == q6_preset[1].kp && QUESTION6_MOTOR_KD == q6_preset[1].kd)
         q11_selected = 1;
     else
         q11_selected = 0;
