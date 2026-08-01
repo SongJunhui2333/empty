@@ -123,6 +123,9 @@ int main(void)
             case 10:
                 Mode10_Loop();
                 break;
+            case 11:
+                Mode11_Loop();
+                break;
             default:
                 break;
             }
@@ -161,6 +164,9 @@ int main(void)
             case 10:
                 Mode10_Exit();
                 break;
+            case 11:
+                Mode11_Exit();
+                break;
             default:
                 break;
             }
@@ -196,6 +202,9 @@ int main(void)
                 break;
             case 10:
                 Mode10_Init();
+                break;
+            case 11:
+                Mode11_Init();
                 break;
             default:
                 break;

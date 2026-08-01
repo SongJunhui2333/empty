@@ -96,4 +96,9 @@ void Mode10_Init(void);
 void Mode10_Loop(void);
 void Mode10_Exit(void);
 
+/* ------------------- 模式11：切换第六问控球PID方案 -------------------- */
+void Mode11_Init(void);
+void Mode11_Loop(void);
+void Mode11_Exit(void);
+
 #endif

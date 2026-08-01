@@ -61,8 +61,6 @@ uint32_t question2_start_time = 0;                                     // 记录
 uint8_t question2_flag = 0;                                            // 模式2的标志位，0表示未开始，1表示已开始
 const float question2_trace_weights[8] = {-9, -8, -2, -1, 1, 2, 8, 9}; // 模式2的循迹权重数组
 
-
-
 pid_t question2_pid_heading; // 模式2的PID控制器实例，用于调整小车的转向
 
 static float QUESTION2_HEADING_OUTPUT_MAX = (40.0f);  // 模式2的PID控制器输出最大值
@@ -73,9 +71,8 @@ static float QUESTION2_HEADING_OUTPUT_MIN = (-40.0f); // 模式2的PID控制器�
 // static float QUESTION2_HEADING_KI = (0.5f);           // 模式2的PID控制器积分系数
 // static float QUESTION2_HEADING_KD = (25.0f);          // 模式2的PID控制器微分系数
 
-
-uint8_t  QUESTION2_BLACK_LINE_THRESHOLD = 4;  /* 模式2黑线检测阈值 */
-uint16_t QUESTION2_MOTOR_BASE_SPEED = 50; // 模式2的电机基础速度
+uint8_t QUESTION2_BLACK_LINE_THRESHOLD = 4;  /* 模式2黑线检测阈值 */
+uint16_t QUESTION2_MOTOR_BASE_SPEED = 50;    // 模式2的电机基础速度
 static float QUESTION2_HEADING_KP = (2.4f);  // 模式2的PID控制器比例系数
 static float QUESTION2_HEADING_KI = (0.4f);  // 模式2的PID控制器积分系数
 static float QUESTION2_HEADING_KD = (22.0f); // 模式2的PID控制器微分系数
@@ -198,13 +195,13 @@ void Mode2_Exit(void)
 /* ---------------------------------------------------------------- */
 
 /* ---- 目标与判据 ---- */
-static float QUESTION3_TARGET_PLUS = 85.0f;   /* 第一目标：+85 像素 */
+static float QUESTION3_TARGET_PLUS = 85.0f;    /* 第一目标：+85 像素 */
 static float QUESTION3_TARGET_MINUS = -115.0f; /* 最终目标：-115 像素 */
-#define QUESTION3_POS_TOL (17.0f)          /* 到位判据：距离目标 ≤ 5 像素 */
-#define QUESTION3_VEL_TOL (300.0f)         /* 稳定判据：球速 ≤ 10 像素/帧 */
-#define QUESTION3_STABLE_TIME_MS (50U)     /* -85 处连续稳定 150 ms */
-#define QUESTION3_MOTOR_OUTPUT_MAX 280.0f  /* 电机正向最大脉冲 */
-#define QUESTION3_MOTOR_OUTPUT_MIN -280.0f /* 电机反向最大脉冲 */
+#define QUESTION3_POS_TOL (17.0f)              /* 到位判据：距离目标 ≤ 5 像素 */
+#define QUESTION3_VEL_TOL (300.0f)             /* 稳定判据：球速 ≤ 10 像素/帧 */
+#define QUESTION3_STABLE_TIME_MS (50U)         /* -85 处连续稳定 150 ms */
+#define QUESTION3_MOTOR_OUTPUT_MAX 280.0f      /* 电机正向最大脉冲 */
+#define QUESTION3_MOTOR_OUTPUT_MIN -280.0f     /* 电机反向最大脉冲 */
 
 /* ---- PID（同模式六风格：单环 + 微扰） ---- */
 static pid_t question3_pid_motor;
@@ -368,10 +365,10 @@ void Mode3_Exit(void)
 /* ---------------------------------------------------------------- */
 /*                             模式4：第四问代码                            */
 /* ---------------------------------------------------------------- */
-uint32_t question4_start_time = 0;                                     // 记录模式4开始的时间
-uint8_t question4_flag = 0;                                            // 模式4的标志位，0表示未开始，1表示已开始
-const float question4_trace_weights[8] = {-8, -4, -2, -1, 1, 2, 4, 8}; // 模式4的循迹权重数组
-uint16_t question4_current_speed = 0;                                  // 模式4当前的电机速度目标值
+uint32_t question4_start_time = 0;                                       // 记录模式4开始的时间
+uint8_t question4_flag = 0;                                              // 模式4的标志位，0表示未开始，1表示已开始
+const float question4_trace_weights[8] = {-16, -8, -2, -1, 1, 2, 8, 16}; // 模式4的循迹权重数组
+uint16_t question4_current_speed = 0;                                    // 模式4当前的电机速度目标值
 
 pid_t question4_pid_heading;                          // 模式4的PID控制器实例，用于调整小车的转向
 static float QUESTION4_HEADING_KP = (2.8f);           // 模式4的PID控制器比例系数
@@ -384,6 +381,7 @@ pid_t question4_pid_motor;                         // 球杆系统PID控制器
 static float QUESTION4_MOTOR_KP = 2.7f;            // 比例系数：球偏差 → 电机脉冲
 static float QUESTION4_MOTOR_KI = 0.015f;          // 积分系数：缓慢消除稳态误差（抗饱和已内置）
 static float QUESTION4_MOTOR_KD = 40.0f;           // 微分系数：利用球速提供阻尼
+static float QUESTION4_PIPE_FF_GAIN = 0.7f;        // 水管弓形前馈增益 (脉冲/像素)
 static float QUESTION4_MOTOR_OUTPUT_MAX = 280.0f;  // 电机正方向最大脉冲
 static float QUESTION4_MOTOR_OUTPUT_MIN = -280.0f; // 电机负方向最大脉冲
 
@@ -443,7 +441,7 @@ void Mode4_Loop(void)
 // ---- 微扰逻辑：小球静止且偏差 >15 时，逐步叠加微扰推动小球 ----
 #define QUESTION5_VEL_STILL 20 // 判定小球静止的速度阈值
 #define QUESTION5_NUDGE_STEP 5 // 每次微扰增量（脉冲）
-#define QUESTION5_NUDGE_MAX 90 // 微扰累积上限
+#define QUESTION5_NUDGE_MAX 60 // 微扰累积上限
 
         if (abs(ball_error) > 15 && abs(ball_vel) < QUESTION5_VEL_STILL)
         {
@@ -462,6 +460,10 @@ void Mode4_Loop(void)
         // else: 球在运动中，保持当前微扰不变，让其继续作用
 
         motor_pos += (float)nudge;
+
+        /* ---- 水管弓形前馈补偿 ---- */
+        /* 水管跨度25cm, 中心下弯1mm, 前馈抵消重力分量, 减轻积分负担 */
+        motor_pos += QUESTION4_PIPE_FF_GAIN * (float)ball_error;
 
         // 限幅保护（电机绝对位置）
         if (motor_pos > 280.0f)
@@ -754,12 +756,19 @@ void Mode5_Exit(void)
 /*                             模式6：第六问代码                            */
 /* ---------------------------------------------------------------- */
 
-pid_t question6_pid_motor;                         // 球杆系统PID控制器
-static float QUESTION6_MOTOR_KP = 2.7f;            // 比例系数：球偏差 → 电机脉冲
-static float QUESTION6_MOTOR_KI = 0.005f;          // 积分系数：缓慢消除稳态误差（抗饱和已内置）
-static float QUESTION6_MOTOR_KD = 40.0f;           // 微分系数：利用球速提供阻尼
+pid_t question6_pid_motor; // 球杆系统PID控制器
+
+static float QUESTION6_PIPE_FF_GAIN = 0.0f;        // 水管弓形前馈增益 (脉冲/像素)
 static float QUESTION6_MOTOR_OUTPUT_MAX = 280.0f;  // 电机正方向最大脉冲
 static float QUESTION6_MOTOR_OUTPUT_MIN = -280.0f; // 电机负方向最大脉冲
+
+static float QUESTION6_MOTOR_KP = 3.5f;  // 比例系数：球偏差 → 电机脉冲
+static float QUESTION6_MOTOR_KI = 0.0f;  // 积分系数：缓慢消除稳态误差（抗饱和已内置）
+static float QUESTION6_MOTOR_KD = 30.0f; // 微分系数：利用球速提供阻尼
+
+// static float QUESTION6_MOTOR_KP = 4.0f;  // 比例系数：球偏差 → 电机脉冲
+// static float QUESTION6_MOTOR_KI = 0.0f;  // 积分系数：缓慢消除稳态误差（抗饱和已内置）
+// static float QUESTION6_MOTOR_KD = 40.0f; // 微分系数：利用球速提供阻尼
 
 uint32_t question6_start_time = 0;                                     // 记录模式6开始的时间
 uint8_t question6_flag = 0;                                            // 模式6的标志位，0表示未开始，1表示已开始
@@ -850,6 +859,10 @@ void Mode6_Loop(void)
 
         motor_pos += (float)nudge;
 
+        /* ---- 水管弓形前馈补偿 ---- */
+        /* 水管跨度25cm, 中心下弯1mm, 前馈抵消重力分量, 减轻积分负担 */
+        motor_pos += QUESTION6_PIPE_FF_GAIN * (float)ball_error;
+
         // 限幅保护（电机绝对位置）
         if (motor_pos > 280.0f)
             motor_pos = 280.0f;
@@ -909,6 +922,12 @@ void Mode6_Loop(void)
             UART_print_string(DEBUG_INST, (char *)uart_tx_buff);
             break;
 
+        case VOFA_CMD_SET_BALL_FF:
+            QUESTION6_PIPE_FF_GAIN = cmd.value;
+            sprintf((char *)uart_tx_buff, "OK FF=%.3f\r\n", (double)cmd.value);
+            UART_print_string(DEBUG_INST, (char *)uart_tx_buff);
+            break;
+
         case VOFA_CMD_SET_SETPOINT:
             pid_set_setpoint(&question6_pid_motor, cmd.value);
             sprintf((char *)uart_tx_buff, "OK SET=%.1f\r\n", (double)cmd.value);
@@ -923,9 +942,8 @@ void Mode6_Loop(void)
             break;
 
         case VOFA_CMD_PRINT_PARAMS:
-            sprintf((char *)uart_tx_buff, "Q6 PID: KP=%.3f KI=%.4f KD=%.1f SET=%.1f\r\n",
-                    (double)question6_pid_motor.kp, (double)question6_pid_motor.ki, (double)question6_pid_motor.kd,
-                    (double)question6_pid_motor.setpoint);
+            sprintf((char *)uart_tx_buff, "Q6: KP=%.3f KI=%.4f KD=%.1f FF=%.3f\r\n", (double)question6_pid_motor.kp,
+                    (double)question6_pid_motor.ki, (double)question6_pid_motor.kd, (double)QUESTION6_PIPE_FF_GAIN);
             UART_print_string(DEBUG_INST, (char *)uart_tx_buff);
             break;
 
@@ -984,6 +1002,10 @@ void Mode7_Loop(void)
         if (Param_Select_Num == 1)
         {
             NextMode = 10; // 切换到模式10，切换第二问速度任务方案
+        }
+        else if (Param_Select_Num == 6)
+        {
+            NextMode = 11; // 切换到模式11，切换第六问控球PID方案
         }
         else if (Param_Select_Num == 2)
         {
@@ -1109,8 +1131,7 @@ void Mode9_Loop(void)
     }
 
     /* ---- OLED 显示 (0.96寸: 4行16大小 或 8行8大小) ---- */
-    sprintf((char *)oled_show_buff, "P:%.0f M:%.0f   ", (double)QUESTION3_TARGET_PLUS,
-            (double)QUESTION3_TARGET_MINUS);
+    sprintf((char *)oled_show_buff, "P:%.0f M:%.0f   ", (double)QUESTION3_TARGET_PLUS, (double)QUESTION3_TARGET_MINUS);
     OLED_ShowString(0, 2, (uint8_t *)oled_show_buff, 16);
 
     OLED_ShowString(0, 5, (uint8_t *)"K1:+ K2:- K4:Bk", 8);
@@ -1135,9 +1156,9 @@ void Mode9_Exit(void)
 typedef struct
 {
     uint16_t motor_speed; /* 电机基础速度 */
-    float    kp;          /* 比例系数 */
-    float    ki;          /* 积分系数 */
-    float    kd;          /* 微分系数 */
+    float kp;             /* 比例系数 */
+    float ki;             /* 积分系数 */
+    float kd;             /* 微分系数 */
 } q2_preset_t;
 
 static const q2_preset_t q2_preset[] = {
@@ -1147,16 +1168,16 @@ static const q2_preset_t q2_preset[] = {
 
 #define Q2_PRESET_COUNT (sizeof(q2_preset) / sizeof(q2_preset[0]))
 
-static uint8_t q10_selected = 0;   /* 0=方案A, 1=方案B */
-static uint8_t q10_edit_mode = 0;  /* 0=切换方案, 1=调节阈值 */
+static uint8_t q10_selected = 0;  /* 0=方案A, 1=方案B */
+static uint8_t q10_edit_mode = 0; /* 0=切换方案, 1=调节阈值 */
 
 /* 将预设值写入 Mode 2 全局变量 */
 static void q10_apply_preset(uint8_t index)
 {
     QUESTION2_MOTOR_BASE_SPEED = q2_preset[index].motor_speed;
-    QUESTION2_HEADING_KP       = q2_preset[index].kp;
-    QUESTION2_HEADING_KI       = q2_preset[index].ki;
-    QUESTION2_HEADING_KD       = q2_preset[index].kd;
+    QUESTION2_HEADING_KP = q2_preset[index].kp;
+    QUESTION2_HEADING_KI = q2_preset[index].ki;
+    QUESTION2_HEADING_KD = q2_preset[index].kd;
 }
 
 void Mode10_Init(void)
@@ -1220,8 +1241,7 @@ void Mode10_Loop(void)
     else
         OLED_ShowString(0, 2, (uint8_t *)"  B:70       ", 16);
 
-    sprintf((char *)oled_show_buff, "THR:%d K1/2:Adj",
-            QUESTION2_BLACK_LINE_THRESHOLD);
+    sprintf((char *)oled_show_buff, "THR:%d K1/2:Adj", QUESTION2_BLACK_LINE_THRESHOLD);
     OLED_ShowString(0, 5, (uint8_t *)oled_show_buff, 8);
 
     if (q10_edit_mode == 0)
@@ -1232,6 +1252,81 @@ void Mode10_Loop(void)
 
 void Mode10_Exit(void)
 {
-    q10_selected  = 0;
+    q10_selected = 0;
     q10_edit_mode = 0;
+}
+
+/* ---------------------------------------------------------------- */
+/*                    模式11：切换第六问控球PID方案                        */
+/* ---------------------------------------------------------------- */
+
+typedef struct
+{
+    float kp;   /* 比例系数 */
+    float ki;   /* 积分系数 */
+    float kd;   /* 微分系数 */
+    float ff;   /* 前馈增益 */
+} q6_preset_t;
+
+static const q6_preset_t q6_preset[] = {
+    {3.5f, 0.0f, 30.0f, 0.0f}, /* 方案 A */
+    {4.0f, 0.0f, 40.0f, 0.0f}, /* 方案 B */
+};
+
+static uint8_t q11_selected = 0;
+
+static void q11_apply_preset(uint8_t index)
+{
+    QUESTION6_MOTOR_KP     = q6_preset[index].kp;
+    QUESTION6_MOTOR_KI     = q6_preset[index].ki;
+    QUESTION6_MOTOR_KD     = q6_preset[index].kd;
+    QUESTION6_PIPE_FF_GAIN = q6_preset[index].ff;
+}
+
+void Mode11_Init(void)
+{
+    OLED_Clear();
+    OLED_ShowString(0, 0, (uint8_t *)"Q6 Ball Preset", 16);
+
+    /* 检测当前参数匹配到对应方案 */
+    if (QUESTION6_MOTOR_KP == q6_preset[1].kp &&
+        QUESTION6_MOTOR_KD == q6_preset[1].kd)
+        q11_selected = 1;
+    else
+        q11_selected = 0;
+
+    q11_apply_preset(q11_selected);
+}
+
+void Mode11_Loop(void)
+{
+    uint8_t KeyNum = Key_GetNum();
+
+    if (KeyNum == 1 || KeyNum == 2)
+    {
+        q11_selected = !q11_selected;
+        q11_apply_preset(q11_selected);
+    }
+    else if (KeyNum == 4)
+    {
+        NextMode = 7;
+    }
+
+    OLED_ShowString(0, 2, (uint8_t *)"K1/2:Sw K4:Back", 8);
+
+    if (q11_selected == 0)
+    {
+        OLED_ShowString(0, 4, (uint8_t *)">>A:3.5/0/30  ", 16);
+        OLED_ShowString(0, 6, (uint8_t *)"  B:4.0/0/40  ", 16);
+    }
+    else
+    {
+        OLED_ShowString(0, 4, (uint8_t *)"  A:3.5/0/30  ", 16);
+        OLED_ShowString(0, 6, (uint8_t *)">>B:4.0/0/40  ", 16);
+    }
+}
+
+void Mode11_Exit(void)
+{
+    q11_selected = 0;
 }
